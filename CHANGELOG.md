@@ -1,6 +1,6 @@
 # Change Logs
 
-## 0.2.5 - 2018/05/13
+## 0.2.6 - 2018/05/13
 - Add tox
 - fix error on the setup.py
 - Add pyyaml requirement
