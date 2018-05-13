@@ -1,0 +1,4 @@
+# test 1: simple string
+test_1: test_1
+# test 2: empty value
+test_2: '[empty]'
