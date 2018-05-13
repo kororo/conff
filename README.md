@@ -1,6 +1,10 @@
 # conff
 Simple config parser with evaluator library.
 
+[![](https://img.shields.io/pypi/v/conff.svg?maxAge=86400)](https://pypi.org/pypi/conff/)
+[![](https://travis-ci.org/kororo/conff.svg?branch=master)](https://travis-ci.org/kororo/conff)
+[![](https://coveralls.io/repos/github/kororo/conff/badge.svg?branch=master)](https://coveralls.io/r/kororo/conff?branch=master)
+
 ### Why Another Config Parser Module?
 This project started because of the complexity of project config. It needs:
 - import mechanism from other file or object
@@ -17,66 +21,84 @@ having config in python script may give too much power than what it requires.
 
 ### Basic Usage
 To get very basic parsing: 
+#### parse object
 ```python
 import conff
+r = conff.parse({'math': '1 + 3'})
+r = {'math': '4'}
+```
 
-# parse object
-conff.parse({'math': '1 + 3'})
-# {'math': '4'}
+#### load YAML file
+```python
+import conff
+r = conff.load('path_of_file.yaml')
+```
 
-# load YAML file
-data = conff.load('path_of_file.yaml')
-
-# import files
+#### import files
+```python
+import conff
 ## y1.yml
 # shared_conf: 1
-
 ## y2.yml
 # conf: F.inc('y1.yml')
 
-data = conff.load('y2.yml')
-# {'conf': {'shared_conf': 1}}
+r = conff.load('y2.yml')
+r = {'conf': {'shared_conf': 1}}
 ```
 
 ### Examples
+More advances examples:
+
+#### parse with simple expression
 ```python
 import conff
+r = conff.parse('1 + 2')
+r = 3
+```
 
-### parse with simple expression
-conff.parse('1 + 2')
-# 3
+#### parse object
+```python
+import conff
+r = conff.parse({"math": "1 + 2"})
+r = {'math': 3}
+```
 
+#### ignore expression (declare it as string)
+```python
+import conff
+r = conff.parse('"1 + 2"')
+r = '1 + 2'
+```
 
-### parse object
-conff.parse({"math": "1 + 2"})
-# {'math': 3}
-
-
-### ignore expression (declare it as string)
-conff.parse('"1 + 2"')
-# '1 + 2'
-
-
-### any errors will be stored as string and the string of expression will be retained
+#### parse error behaviours
+```python
+import conff
 errors = []
-conff.parse({"math": "1 / 0"}, errors=errors)
-# {'math': '1 / 0'}
-# errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
+r = conff.parse({"math": "1 / 0"}, errors=errors)
+r = {'math': '1 / 0'}
+errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
+```
 
-
-### parse with functions
+#### parse with functions
+```python
+import conff
 def fn_add(a, b):
     return a + b
-conff.parse('F.add(1, 2)', fns={'add': fn_add})
-# 3
+r = conff.parse('F.add(1, 2)', fns={'add': fn_add})
+r = 3
+```
 
 
-### parse with names
-conff.parse('a + b', names={'a': 1, 'b': 2})
-# 3
+#### parse with names
+```python
+import conff
+r = conff.parse('a + b', names={'a': 1, 'b': 2})
+r = 3
+```
 
-
-### parse with extends
+#### parse with extends
+```python
+import conff
 data = {
     't1': {'a': 'a'},
     't2': {
@@ -84,11 +106,14 @@ data = {
         'b': 'b'
     }
 }
-conff.parse(data)
-# {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
+r = conff.parse(data)
+r = {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
+```
 
 
-### parse with updates
+#### parse with updates
+```python
+import conff
 data = {
     't1': {'a': 'a'},
     't2': {
@@ -98,11 +123,13 @@ data = {
         },
     }
 }
-conff.parse(data)
-# {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
+r = conff.parse(data)
+r = {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
+```
 
-
-### parse with extends and updates
+#### parse with extends and updates
+```python
+import conff
 data = {
     't1': {'a': 'a'},
     't2': {
@@ -114,8 +141,8 @@ data = {
         },
     }
 }
-conff.parse(data)
-# {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
+r = conff.parse(data)
+r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
 ```
 
 ### Test
