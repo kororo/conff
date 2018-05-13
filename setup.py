@@ -10,18 +10,19 @@ def get_requirements(r: str):
         from pip.req import parse_requirements
 
     # parse_requirements() returns generator of pip.req.InstallRequirement objects
-    install_reqs = parse_requirements(r, session=pkg)
-    return install_reqs
+    if os.path.exists(r):
+        install_reqs = parse_requirements(r, session=pkg)
+        return install_reqs
+    return []
 
 
 __version__ = '0.2.3'
-
-rf = 'requirements.txt'
-rs = [str(ir.req) for ir in get_requirements(rf)]
+pkg = 'conff'
+rs = [str(ir.req) for ir in get_requirements('requirements.txt')]
 
 setup(
-    name='conff',
-    py_modules=['conff'],
+    name=pkg,
+    py_modules=[pkg],
     version=__version__,
     description='Simple config parser with evaluator library.',
     long_description=open('README.md', 'r').read(),
