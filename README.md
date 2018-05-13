@@ -2,8 +2,9 @@
 Simple config parser with evaluator library.
 
 [![](https://img.shields.io/pypi/v/conff.svg?maxAge=86400)](https://pypi.org/pypi/conff/)
-[![](https://travis-ci.org/kororo/conff.svg?branch=master)](https://travis-ci.org/kororo/conff)
-[![](https://coveralls.io/repos/github/kororo/conff/badge.svg?branch=master)](https://coveralls.io/r/kororo/conff?branch=master)
+[![Build Status](https://travis-ci.com/kororo/conff.svg?branch=master)](https://travis-ci.com/kororo/conff)
+[![Coverage Status](https://coveralls.io/repos/github/kororo/conff/badge.svg)](https://coveralls.io/github/kororo/conff)
+[![Maintainability](https://api.codeclimate.com/v1/badges/c476e9c6bfe505bc4b4d/maintainability)](https://codeclimate.com/github/kororo/conff/maintainability)
 
 ### Why Another Config Parser Module?
 This project started because of the complexity of project config. It needs:
