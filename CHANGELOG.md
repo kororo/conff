@@ -1,6 +1,6 @@
 # Change Logs
 
-## 0.2.7 - 2018/05/13
+## 0.2.8
 - Add tox
 - fix error on the setup.py
 - Add pyyaml requirement
@@ -8,6 +8,6 @@
 - Update documentation
 - Add travis
 
-## 0.1 - 2018/05/13
+## 0.1
 - Added ``conff``
 - Initial state

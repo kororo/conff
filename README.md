@@ -3,7 +3,7 @@ Simple config parser with evaluator library.
 
 [![](https://img.shields.io/pypi/v/conff.svg?maxAge=86400)](https://pypi.org/pypi/conff/)
 [![Build Status](https://travis-ci.com/kororo/conff.svg?branch=master)](https://travis-ci.com/kororo/conff)
-[![Coverage Status](https://coveralls.io/repos/github/kororo/conff/badge.svg)](https://coveralls.io/github/kororo/conff)
+[![Coverage Status](https://coveralls.io/repos/github/kororo/conff/badge.svg?branch=master)](https://coveralls.io/github/kororo/conff?branch=master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/c476e9c6bfe505bc4b4d/maintainability)](https://codeclimate.com/github/kororo/conff/maintainability)
 
 ### Why Another Config Parser Module?
@@ -151,6 +151,10 @@ To test this project:
 ```bash
 nose2 --with-coverage
 ```
+
+### TODO
+- Add more coverage on python versions
+- More documentation on readthedocs
 
 ### Other Open Source
 This opensource project uses other awesome projects:
