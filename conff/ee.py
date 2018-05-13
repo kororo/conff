@@ -25,14 +25,11 @@ def update_dict_recursive(d, u):
 
 def filter_value(value):
     if type(value) == str:
-        value: str
         if value == '[empty]':
             value = ''
     elif type(value) == Munch2:
-        value: Munch2
         value = value.toDict()  # json.dumps(value)
     if type(value) == str:
-        value: str
         value = value.strip()
     return value
 
@@ -71,10 +68,8 @@ def fn_extend(val, val2):
     type_val = type(val)
     type_val2 = type(val2)
     if type_val == list and type_val2 == list:
-        val: list
         val.extend(val2)
     elif type_val in [dict, odict, Munch2] and type_val2 in [dict, odict, Munch2]:
-        val: dict
         for k, v in val2.items():
             val[k] = v
     return val
@@ -169,7 +164,6 @@ def parse(root, names: dict = None, fns: dict = None, parent=None, errors: list 
     errors = errors if type(errors) == list else []
     root_type = type(root)
     if root_type == dict or root_type == collections.OrderedDict:
-        root: typing.Dict[str, any]
         root_keys = list(root.keys())
         for k, v in root.items():
             root[k] = parse(root=v, names=names, fns=fns, parent=root, errors=errors)
