@@ -1,7 +1,23 @@
+import os
+
 from setuptools import setup
 
 
+def get_requirements(r: str):
+    try:  # for pip >= 10
+        from pip._internal.req import parse_requirements
+    except ImportError:  # for pip <= 9.0.3
+        from pip.req import parse_requirements
+
+    # parse_requirements() returns generator of pip.req.InstallRequirement objects
+    install_reqs = parse_requirements(r, session=pkg)
+    return install_reqs
+
+
 __version__ = '0.1.0'
+
+rf = os.path.join(os.sep, 'script', 'requirements.txt')
+rs = [str(ir.req) for ir in get_requirements(rf)]
 
 setup(
     name='conff',
@@ -26,13 +42,10 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Programming Language :: Python',
     ],
+    install_requires=rs
 )
