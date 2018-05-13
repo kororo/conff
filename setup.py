@@ -16,13 +16,14 @@ def get_requirements(r: str):
     return []
 
 
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 pkg = 'conff'
 rs = [str(ir.req) for ir in get_requirements('requirements.txt')]
 
 setup(
     name=pkg,
-    py_modules=[pkg],
+    packages=[pkg],
+    include_package_data=True,
     version=__version__,
     description='Simple config parser with evaluator library.',
     long_description=open('README.md', 'r').read(),
@@ -43,10 +44,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Programming Language :: Python',
     ],
+    # >=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*
+    python_requires='>=3.6',
     install_requires=rs
 )

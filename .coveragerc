@@ -1,6 +1,7 @@
 [run]
 omit = setup.py
+    .tox/*
     /home/travis/virtualenv/*
-    .tox
+
 [report]
-show_missing = True
+show_missing = False

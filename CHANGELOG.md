@@ -1,10 +1,10 @@
 # Change Logs
 
-## 0.2.6 - 2018/05/13
+## 0.2.7 - 2018/05/13
 - Add tox
 - fix error on the setup.py
 - Add pyyaml requirement
-- Drop python 2.7
+- Drop python 2.7, 3.5
 - Update documentation
 - Add travis
 
