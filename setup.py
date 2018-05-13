@@ -14,9 +14,9 @@ def get_requirements(r: str):
     return install_reqs
 
 
-__version__ = '0.1.0'
+__version__ = '0.2.3'
 
-rf = os.path.join(os.sep, 'script', 'requirements.txt')
+rf = 'requirements.txt'
 rs = [str(ir.req) for ir in get_requirements(rf)]
 
 setup(
