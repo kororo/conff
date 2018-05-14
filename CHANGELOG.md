@@ -1,6 +1,7 @@
 # Change Logs
 
-## 0.2.8
+## 0.2.9
+- Change readme to rst format
 - Add tox
 - fix error on the setup.py
 - Add pyyaml requirement

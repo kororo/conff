@@ -16,7 +16,7 @@ def get_requirements(r: str):
     return []
 
 
-__version__ = '0.2.8'
+__version__ = '0.2.9'
 pkg = 'conff'
 rs = [str(ir.req) for ir in get_requirements('requirements.txt')]
 
@@ -26,7 +26,7 @@ setup(
     include_package_data=True,
     version=__version__,
     description='Simple config parser with evaluator library.',
-    long_description=open('README.md', 'r').read(),
+    long_description=open('README.rst', 'r').read(),
     author='Robertus Johansyah',
     author_email='kororola@gmail.com',
     url='https://github.com/kororo/conff',
