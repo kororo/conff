@@ -1,6 +1,6 @@
 # Change Logs
 
-## 0.2.9
+## 0.3.0
 - Change readme to rst format
 - Add tox
 - fix error on the setup.py

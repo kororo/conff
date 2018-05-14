@@ -3,10 +3,22 @@ conff
 
 Simple config parser with evaluator library.
 
-`conff <https://pypi.org/pypi/conff/>`__
-`Build Status <https://travis-ci.com/kororo/conff>`__
-`Coverage Status <https://coveralls.io/github/kororo/conff?branch=master>`__
-`Maintainability <https://codeclimate.com/github/kororo/conff/maintainability>`__
+.. image:: https://badge.fury.io/py/conff.svg
+    :target: https://badge.fury.io/py/conff
+
+.. image:: https://travis-ci.com/kororo/conff.svg?branch=master
+    :target: https://travis-ci.com/kororo/conff
+
+.. image:: https://travis-ci.com/kororo/conff.svg?branch=master
+    :target: https://travis-ci.com/kororo/conff
+
+.. image:: https://coveralls.io/repos/github/kororo/conff/badge.svg?branch=master
+    :target: https://coveralls.io/github/kororo/conff?branch=master
+
+.. image:: https://api.codeclimate.com/v1/badges/c476e9c6bfe505bc4b4d/maintainability
+    :target: https://codeclimate.com/github/kororo/conff/maintainability
+    :alt: Maintainability
+
 
 Why Another Config Parser Module?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -196,6 +208,7 @@ Other Open Source
 ~~~~~~~~~~~~~~~~~
 
 This opensource project uses other awesome projects:
-```Munch`` <https://github.com/Infinidat/munch>`__
-```simpleeval`` <https://github.com/danthedeckie/simpleeval>`__
-```cryptography`` <https://github.com/pyca/cryptography>`__
+
+- ```Munch`` <https://github.com/Infinidat/munch>`
+- ```simpleeval`` <https://github.com/danthedeckie/simpleeval>`
+- ```cryptography`` <https://github.com/pyca/cryptography>`
