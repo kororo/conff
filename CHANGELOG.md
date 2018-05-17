@@ -1,5 +1,8 @@
 # Change Logs
 
+## 0.3.1
+- Update documentation
+
 ## 0.3.0
 - Change readme to rst format
 - Add tox
@@ -9,6 +12,6 @@
 - Update documentation
 - Add travis
 
-## 0.1
+## 0.1.0
 - Added ``conff``
 - Initial state
