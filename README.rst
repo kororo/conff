@@ -9,9 +9,6 @@ Simple config parser with evaluator library.
 .. image:: https://travis-ci.com/kororo/conff.svg?branch=master
     :target: https://travis-ci.com/kororo/conff
 
-.. image:: https://travis-ci.com/kororo/conff.svg?branch=master
-    :target: https://travis-ci.com/kororo/conff
-
 .. image:: https://coveralls.io/repos/github/kororo/conff/badge.svg?branch=master
     :target: https://coveralls.io/github/kororo/conff?branch=master
 
@@ -23,14 +20,61 @@ Simple config parser with evaluator library.
 Why Another Config Parser Module?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This project started because of the complexity of project config. It
-needs:
-- import mechanism from other file or object
-- ability to encrypt/decrypt values with ease
-- expression on the config to have flexibility to the environments
+This project inspired of the necessity complex config in a project. By means complex:
 
-One can argue, it is better to put into PY file, however, having config
-in python script may give too much power than what it requires.
+- Reusability
+
+  - Import values from file
+  - Reference values from other object
+
+- Secure
+
+  - Encrypt/decrypt sensitive values
+
+- Flexible
+
+  - Make logical expression to derive values
+
+- Powerful
+
+  - Add custom functions in Python
+  - Link name data from Python
+
+TODO
+~~~~
+
+- [X] Setup basic necessity
+
+  - [X] Stop procrastinating
+  - [X] Project registration in pypi
+  - [X] Create unit tests
+  - [X] Setup travis
+  - [X] Setup coveralls
+
+- [ ] Add more support on Python versions
+
+  - [ ] 2.7
+  - [ ] 2.8
+  - [ ] 3.0
+  - [ ] 3.1
+  - [ ] 3.2
+  - [ ] 3.3
+  - [ ] 3.4
+  - [ ] 3.5
+  - [X] 3.6
+
+- [ ] Features
+
+  - [ ] Test on multilanguage
+  - [ ] Add better exception handling
+  - [ ] Add circular dependencies error
+  - [ ] Ensure this is good on production environment
+
+- [ ] Improve docs
+
+  - [ ] Make github layout code into two left -> right
+  - [ ] Put more examples
+  - [ ] Setup readthedocs
 
 Install
 ~~~~~~~
@@ -42,7 +86,7 @@ Install
 Basic Usage
 ~~~~~~~~~~~
 
-To get very basic parsing: #### parse object
+To get very basic parsing:
 
 .. code:: python
 
@@ -77,7 +121,7 @@ Examples
 
 More advances examples:
 
-parse with simple expression
+Parse with simple expression
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -86,7 +130,7 @@ parse with simple expression
    r = conff.parse('1 + 2')
    r = 3
 
-parse object
+Parse object
 ^^^^^^^^^^^^
 
 .. code:: python
@@ -95,7 +139,7 @@ parse object
    r = conff.parse({"math": "1 + 2"})
    r = {'math': 3}
 
-ignore expression (declare it as string)
+Ignore expression (declare it as string)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -104,7 +148,7 @@ ignore expression (declare it as string)
    r = conff.parse('"1 + 2"')
    r = '1 + 2'
 
-parse error behaviours
+Parse error behaviours
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -115,7 +159,7 @@ parse error behaviours
    r = {'math': '1 / 0'}
    errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
 
-parse with functions
+Parse with functions
 ^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -126,7 +170,7 @@ parse with functions
    r = conff.parse('F.add(1, 2)', fns={'add': fn_add})
    r = 3
 
-parse with names
+Parse with names
 ^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -135,7 +179,7 @@ parse with names
    r = conff.parse('a + b', names={'a': 1, 'b': 2})
    r = 3
 
-parse with extends
+Parse with extends
 ^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -151,7 +195,7 @@ parse with extends
    r = conff.parse(data)
    r = {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
 
-parse with updates
+Parse with updates
 ^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -169,7 +213,7 @@ parse with updates
    r = conff.parse(data)
    r = {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
 
-parse with extends and updates
+Parse with extends and updates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
@@ -198,17 +242,11 @@ To test this project:
 
    nose2
 
-TODO
-~~~~
-
--  Add more coverage on python versions
--  More documentation on readthedocs
-
 Other Open Source
 ~~~~~~~~~~~~~~~~~
 
-This opensource project uses other awesome projects:
+This project uses other awesome projects:
 
-- ```Munch`` <https://github.com/Infinidat/munch>`
-- ```simpleeval`` <https://github.com/danthedeckie/simpleeval>`
-- ```cryptography`` <https://github.com/pyca/cryptography>`
+- `munch <https://github.com/Infinidat/munch>`_
+- `simpleeval <https://github.com/danthedeckie/simpleeval>`_
+- `cryptography <https://github.com/pyca/cryptography>`_
