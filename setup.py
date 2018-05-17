@@ -16,7 +16,7 @@ def get_requirements(r: str):
     return []
 
 
-__version__ = '0.3.0'
+__version__ = '0.3.2'
 pkg = 'conff'
 rs = [str(ir.req) for ir in get_requirements('requirements.txt')]
 
