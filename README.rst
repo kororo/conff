@@ -83,7 +83,7 @@ Install
    [sudo] pip install conff
 
 Basic Usage
-~~~~~~~~~~~
+-----------
 
 To get very basic parsing:
 
@@ -117,32 +117,33 @@ import files
 
 
 Real World Examples
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data)>`_.
 Imagine you start an important project, your code need to analyse image/videos which involves workflow
 with set of tasks involve with AWS Rekognition. The steps will be more/less like this:
 
-    1. Read images/videos from a specific folder, if images goes to (2a), if videos goes to (2b).
-    2a. Analyse the images with AWS API
-    2b. Analyse the videos with AWS API
-    3. Write the result back to JSON file
+    1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
+
+    2. Analyse the images with AWS API
+
+    3. Analyse the videos with AWS API
+
+    4. Write the result back to JSON file
 
 The configuration required:
 
-    1. Read images/videos
-        - root_path: where is the folder
-    2a. Analyse images
-        - AWS API credential
-        - Max resolution for image
-    2b. Analyse videos
-        - AWS API credential
-        - Max resolution for video
-    3. Write results
-        - file_path: where is the result should be written
+    1. Read images/videos (where is the folder)
+
+    2. Analyse images (AWS API credential and max resolution for image)
+
+    3. Analyse videos  (AWS API credential and max resolution for image)
+
+    4. Write results (where is the result should be written)
 
 1. Without conff library
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml)>`_
 Where it is all started, if we require to store the configuration as per normally, it should be like this.
 
@@ -172,6 +173,7 @@ Where it is all started, if we require to store the configuration as per normall
         output_path: /data/project/result.json
 
 .. code:: python
+
     import yaml
     with open('data/sample_config_01.yml') as stream:
         r1 = yaml.safe_load(stream)
@@ -183,7 +185,7 @@ Notes:
     - R03: the secret is plain visible, if this stored in GIT, it is pure disaster
 
 2. Fix the repeat
------------------
+^^^^^^^^^^^^^^^^^
 
 File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml)>`_
 Repeating values/configuration is bad, this could potentially cause human mistake if changes made is not
@@ -232,7 +234,7 @@ Notes:
       as ~/.secret
 
 3. Optimise to the extreme
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is just demonstration purposes to see the full capabilities of this library.
 
@@ -276,7 +278,7 @@ and sample_config_03.yml.
     self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
 Examples
-~~~~~~~~
+--------
 
 More advances examples:
 
@@ -396,6 +398,7 @@ Encryption
 ~~~~~~~~~~
 
 .. code:: python
+
     import conff
     # generate key, save it somewhere safe
     names = {'R': {'_': {'etype': 'fernet'}}}
