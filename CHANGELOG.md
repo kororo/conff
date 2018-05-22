@@ -1,5 +1,13 @@
 # Change Logs
 
+## 0.4
+- Add support 3.5
+- Add more examples and tests
+- Expose more functions for encryption
+
+## 0.3.3
+- Drop 2.8, 3.0, 3.1, 3.2, 3.3, 3.4 due to Python EOL versions
+
 ## 0.3.2
 - Update documentation
 

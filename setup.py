@@ -16,7 +16,7 @@ def get_requirements(r: str):
     return []
 
 
-__version__ = '0.3.2'
+__version__ = '0.4'
 pkg = 'conff'
 rs = [str(ir.req) for ir in get_requirements('requirements.txt')]
 
@@ -44,11 +44,11 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Programming Language :: Python',
     ],
-    # >=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     install_requires=rs
 )

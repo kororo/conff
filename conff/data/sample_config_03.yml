@@ -1,0 +1,19 @@
+# this can be any name, global, conf, shared
+shared:
+  project_path: /data/project
+  analyse_image_video:
+    api_cred:
+      region_name: ap-southeast-2
+      aws_access_key_id: ACCESSKEY1234
+      aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+    max_res: [1024, 768]
+job:
+  read_image:
+    root_path: R.shared.project_path + '/images_and_videos/'
+  analyse_image: R.shared.analyse_image_video
+  analyse_video:
+    F.extend: R.shared.analyse_image_video
+    F.update:
+      max_res: [800, 600]
+  write_result:
+    output_path: R.shared.project_path + '/result.json'

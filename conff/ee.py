@@ -1,7 +1,7 @@
 import collections
 import copy
 import os
-import typing
+import simpleeval
 import yaml
 from munch import Munch
 from simpleeval import EvalWithCompoundTypes
@@ -10,16 +10,42 @@ from cryptography.fernet import Fernet
 
 
 class Munch2(Munch):
+    """
+    Provide easy way to access item in object by dot-notation.
+    Example:
+        obj = {'item': 'value'}
+        # old way
+        value = obj.get('item')
+        # with munch
+        value = obj.item
+    """
     pass
 
 
-def update_dict_recursive(d, u):
+def update_recursive(d, u):
+    """
+    Update dictionary recursively. It traverse any object implements "collections.Mapping", anything else,
+    it overwrites the original value.
+    :param d: Original dictionary to be updated
+    :param u: Value dictionary
+    :return: Updated dictionary after merged
+    """
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
-            r = update_dict_recursive(d.get(k, {}), v)
-            d[k] = r
+        if isinstance(d, dict):
+            d2 = d.get(k, {})
         else:
-            d[k] = u[k]
+            d2 = getattr(d, k, object())
+
+        if isinstance(v, dict):
+            r = update_recursive(d2, v)
+            u2 = r
+        else:
+            u2 = u[k]
+
+        if isinstance(d, dict):
+            d[k] = u2
+        else:
+            setattr(d, k, u2)
     return d
 
 
@@ -28,7 +54,7 @@ def filter_value(value):
         if value == '[empty]':
             value = ''
     elif type(value) == Munch2:
-        value = value.toDict()  # json.dumps(value)
+        value = value.toDict()
     if type(value) == str:
         value = value.strip()
     return value
@@ -39,10 +65,10 @@ def fn_str(val):
 
 
 def fn_has(val, name):
-    try:
-        return val[name] is not None
-    except:
-        return False
+    if isinstance(val, collections.Mapping):
+        return val.get(name, False) is not False
+    else:
+        return name in val
 
 
 def fn_list_next(vals, default=None):
@@ -102,6 +128,17 @@ def fn_encrypt_names(names: dict):
     return fn_encrypt
 
 
+def fn_crypt_generate_key_names(names: dict = None):
+    def fn_crypt_generate_key(etype=None):
+        r = (names if names else {}).get('R', {}).get('_', {})
+        etype = etype if etype else r.get('etype')
+        if etype == 'fernet':
+            key = Fernet.generate_key()
+            return key
+
+    return fn_crypt_generate_key
+
+
 def fn_decrypt_names(names: dict):
     def fn_decrypt(data, etype=None, ekey=None):
         r = (names if names else {}).get('R', {}).get('_', {})
@@ -132,7 +169,7 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
     names2 = Munch2.fromDict({**names, **{
 
     }})
-    fns = {'F': update_dict_recursive(fns, {
+    fns = {'F': update_recursive(fns, {
         'list': {
             'next': fn_list_next,
             'join': fn_list_join
@@ -185,11 +222,16 @@ def parse(root, names: dict = None, fns: dict = None, parent=None, errors: list 
     return root
 
 
-def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = None):
+def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = None, opts: dict = None):
     errors = errors if type(errors) == list else []
     fs_file_path = os.path.join(fs_root, fs_path)
     fs_root = fs_root if fs_root is None else os.path.dirname(fs_file_path)
     params = params if params else {}
+    opts = opts if opts else {
+        'max_power': simpleeval.MAX_POWER,
+        'max_string_length': simpleeval.MAX_STRING_LENGTH,
+        'disallow_prefixes': simpleeval.DISALLOW_PREFIXES
+    }
     try:
         with open(fs_file_path) as stream:
             # load_yaml initial structure

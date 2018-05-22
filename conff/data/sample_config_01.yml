@@ -1,0 +1,22 @@
+job:
+  read_image:
+    # R01
+    root_path: /data/project/images_and_videos/
+  analyse_image:
+    # R02
+    api_cred:
+      region_name: ap-southeast-2
+      aws_access_key_id: ACCESSKEY1234
+      # R03
+      aws_secret_access_key: ACCESSSECRETPLAIN1234
+    max_res: [1024, 768]
+  analyse_video:
+    # R04
+    api_cred:
+      region_name: ap-southeast-2
+      aws_access_key_id: ACCESSKEY1234
+      aws_secret_access_key: ACCESSSECRETPLAIN1234
+    max_res: [800, 600]
+  write_result:
+    # R05
+    output_path: /data/project/result.json
