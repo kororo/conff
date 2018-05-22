@@ -119,7 +119,7 @@ import files
 Real World Examples
 -------------------
 
-All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data)>`_.
+All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data>`_.
 Imagine you start an important project, your code need to analyse image/videos which involves workflow
 with set of tasks involve with AWS Rekognition. The steps will be more/less like this:
 
@@ -144,7 +144,8 @@ The configuration required:
 1. Without conff library
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml)>`_
+File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml>`_
+
 Where it is all started, if we require to store the configuration as per normally, it should be like this.
 
 .. code:: yaml
@@ -187,7 +188,8 @@ Notes:
 2. Fix the repeat
 ^^^^^^^^^^^^^^^^^
 
-File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml)>`_
+File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml>`_
+
 Repeating values/configuration is bad, this could potentially cause human mistake if changes made is not
 consistently applied in all occurences.
 
@@ -235,6 +237,8 @@ Notes:
 
 3. Optimise to the extreme
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_03.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_03.yml>`_
 
 This is just demonstration purposes to see the full capabilities of this library.
 
