@@ -145,9 +145,11 @@ def fn_decrypt_names(names: dict):
         etype = etype if etype else r.get('etype')
         ekey = ekey if ekey else r.get('ekey')
         message = None
+        print(etype, ekey)
         if etype == 'fernet':
             f = Fernet(ekey)
             message = f.decrypt(token=str(data).encode()).decode()
+            print(message)
         return message
 
     return fn_decrypt
