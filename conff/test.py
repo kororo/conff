@@ -57,11 +57,6 @@ class ConffTestCase(TestCase):
         data_test_13 = {'test_13_1': 1, 'test_13_2': 2, 'test_13_3': 3, 'test_13_5': {'test_13_5_1': 1},
                         'test_13_6': {'test_13_6_1': 1}}
         self.assertDictEqual(data.get('test_13'), data_test_13)
-
-        print('13')
-        print(data.get('test_13'))
-        print('14')
-        print(data.get('test_14'))
         # test extend + update
         data_test_14 = {'test_13_1': 11, 'test_13_2': 2, 'test_13_3': 3, 'test_13_5': 5,
                         'test_13_6': {'test_13_6_1': 1, 'test_13_6_2': {'test_13_6_2_1': 1, 'test_13_6_2_2': 2}},
@@ -96,7 +91,9 @@ class ConffTestCase(TestCase):
             r1 = yaml.safe_load(stream)
         fs_path = self.get_test_data_path('sample_config_02.yml')
         ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        errors = []
+        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
+        print(errors)
         fs_path = self.get_test_data_path('sample_config_03.yml')
         r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
         self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
