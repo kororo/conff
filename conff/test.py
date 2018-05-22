@@ -1,5 +1,7 @@
 import os
 from unittest import TestCase
+
+import yaml
 from cryptography.fernet import Fernet
 
 import conff
@@ -41,7 +43,7 @@ class ConffTestCase(TestCase):
         # test complex extends
         self.assertDictEqual(data.get('test_8'), {'data2_1': 1, 'data2_2': '2a', 'data2_3': 3, 'data2_4': 4})
         # test complex expressions
-        self.assertListEqual(data.get('test_9', {}).get('test_9_1'), [True, False])
+        self.assertListEqual(data.get('test_9', {}).get('test_9_1'), [True, False, True, False])
         self.assertListEqual(data.get('test_9', {}).get('test_9_2'), [1, 'RO'])
         self.assertEqual(data.get('test_9', {}).get('test_9_3'), '1 2 3')
         self.assertEqual(data.get('test_9', {}).get('test_9_4'), 'ro/ro')
@@ -69,3 +71,39 @@ class ConffTestCase(TestCase):
     def test_parse(self):
         data = conff.parse('{"a": "a", "b": "1/0"}', names={}, fns={})
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+
+    def test_encryption(self):
+        # generate key, save it somewhere safe
+        names = {'R': {'_': {'etype': 'fernet'}}}
+        etype = conff.generate_key(names)()
+        ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+        names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+        original_value = 'ACCESSSECRETPLAIN1234'
+        encrypted_value = conff.encrypt(names)(original_value)
+        # decrypt data
+        value = conff.decrypt(names)(encrypted_value)
+        self.assertEqual(original_value, value, 'Value mismatch')
+
+    def test_sample(self):
+        # nose2 conff.test.ConffTestCase.test_sample
+        fs_path = self.get_test_data_path('sample_config_01.yml')
+        with open(fs_path) as stream:
+            r1 = yaml.safe_load(stream)
+        fs_path = self.get_test_data_path('sample_config_02.yml')
+        ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        fs_path = self.get_test_data_path('sample_config_03.yml')
+        r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
+        self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
+
+    def test_object(self):
+        # nose2 conff.test.ConffTestCase.test_object
+        # TODO: add test when trying to combine config as object with conff
+        # test update
+        class Test(object):
+            test = None
+
+        data = Test()
+        conff.update(data, {'test': 'test'})
+        self.assertEqual('test', data.test, 'Value mismatch')

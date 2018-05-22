@@ -51,29 +51,28 @@ TODO
   - [X] Setup travis
   - [X] Setup coveralls
 
-- [ ] Add more support on Python versions
+- [ ] Add more support on Python versions (based on. `Python versions <https://en.wikipedia.org/wiki/CPython#Version_history)>`_
 
   - [ ] 2.7
-  - [ ] 2.8
-  - [ ] 3.0
-  - [ ] 3.1
-  - [ ] 3.2
-  - [ ] 3.3
   - [ ] 3.4
-  - [ ] 3.5
+  - [X] 3.5
   - [X] 3.6
 
 - [ ] Features
 
+  - [X] Add more functions for encryption
   - [ ] Test on multilanguage
   - [ ] Add better exception handling
   - [ ] Add circular dependencies error
   - [ ] Ensure this is good on production environment
+  - [X] Add options to give more flexibility
+  - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
 
 - [ ] Improve docs
 
+  - [ ] Add more code comments and visibilities
   - [ ] Make github layout code into two left -> right
-  - [ ] Put more examples
+  - [X] Put more examples
   - [ ] Setup readthedocs
 
 Install
@@ -84,7 +83,7 @@ Install
    [sudo] pip install conff
 
 Basic Usage
-~~~~~~~~~~~
+-----------
 
 To get very basic parsing:
 
@@ -116,8 +115,170 @@ import files
    r = conff.load('y2.yml')
    r = {'conf': {'shared_conf': 1}}
 
+
+Real World Examples
+-------------------
+
+All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data)>`_.
+Imagine you start an important project, your code need to analyse image/videos which involves workflow
+with set of tasks involve with AWS Rekognition. The steps will be more/less like this:
+
+    1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
+
+    2. Analyse the images with AWS API
+
+    3. Analyse the videos with AWS API
+
+    4. Write the result back to JSON file
+
+The configuration required:
+
+    1. Read images/videos (where is the folder)
+
+    2. Analyse images (AWS API credential and max resolution for image)
+
+    3. Analyse videos  (AWS API credential and max resolution for image)
+
+    4. Write results (where is the result should be written)
+
+1. Without conff library
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml)>`_
+Where it is all started, if we require to store the configuration as per normally, it should be like this.
+
+.. code:: yaml
+
+    job:
+      read_image:
+        # R01
+        root_path: /data/project/images_and_videos/
+      analyse_image:
+        # R02
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          # R03
+          aws_secret_access_key: ACCESSSECRETPLAIN1234
+        max_res: [1024, 768]
+      analyse_video:
+        # R04
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          aws_secret_access_key: ACCESSSECRETPLAIN1234
+        max_res: [800, 600]
+      write_result:
+        # R05
+        output_path: /data/project/result.json
+
+.. code:: python
+
+    import yaml
+    with open('data/sample_config_01.yml') as stream:
+        r1 = yaml.safe_load(stream)
+
+Notes:
+
+    - R01: The subpath of "/data/project" is repeated between R01 and R05
+    - R02: api_cred is repeatedly defined with R04
+    - R03: the secret is plain visible, if this stored in GIT, it is pure disaster
+
+2. Fix the repeat
+^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml)>`_
+Repeating values/configuration is bad, this could potentially cause human mistake if changes made is not
+consistently applied in all occurences.
+
+.. code:: yaml
+
+    # this can be any name, as long as not reserved in Python
+    shared:
+      project_path: /data/project
+      aws_cred:
+        region_name: ap-southeast-2
+        aws_access_key_id: ACCESSKEY1234
+        # F03
+        aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+
+    job:
+      read_image:
+        # F01
+        root_path: R.shared.project_path + '/images_and_videos/'
+      analyse_image:
+        # F02
+        api_cred: R.shared.aws_cred
+        max_res: [1024, 768]
+      analyse_video:
+        # F04
+        api_cred: R.shared.aws_cred
+        max_res: [800, 600]
+      write_result:
+        # F05
+        output_path: R.shared.project_path + '/result.json'
+
+.. code:: python
+
+    import conff
+    # ekey is the secured encryption key
+    # WARNING: this is just demonstration purposes
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    r2 = conff.load(fs_path='data/sample_config_02.yml', params={'ekey': ekey})
+
+Notes:
+
+    - F01: it is safe if the prefix '/data/project' need to be changed, it will automatically changed for F05
+    - F02: no more duplicated config with F04
+    - F03: it is secured to save this to GIT, as long as the encryption key is stored securely somewhere in server such
+      as ~/.secret
+
+3. Optimise to the extreme
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is just demonstration purposes to see the full capabilities of this library.
+
+.. code:: yaml
+
+    # this can be any name, global, conf, shared
+    shared:
+      project_path: /data/project
+      analyse_image_video:
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+        max_res: [1024, 768]
+    job:
+      read_image:
+        root_path: R.shared.project_path + '/images_and_videos/'
+      analyse_image: R.shared.analyse_image_video
+      analyse_video:
+        F.extend: R.shared.analyse_image_video
+        F.update:
+          max_res: [800, 600]
+      write_result:
+        output_path: R.shared.project_path + '/result.json'
+
+For completeness, ensuring data is consistent and correct between sample_config_01.yml, sample_config_02.yml
+and sample_config_03.yml.
+
+.. code:: python
+
+    # nose2 conff.test.ConffTestCase.test_sample
+    fs_path = 'data/sample_config_01.yml'
+    with open(fs_path) as stream:
+        r1 = yaml.safe_load(stream)
+    fs_path = 'data/sample_config_02.yml'
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+    fs_path = 'data/sample_config_03.yml'
+    r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+    self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
+    self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
+
 Examples
-~~~~~~~~
+--------
 
 More advances examples:
 
@@ -233,6 +394,32 @@ Parse with extends and updates
    r = conff.parse(data)
    r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
 
+Encryption
+~~~~~~~~~~
+
+.. code:: python
+
+    import conff
+    # generate key, save it somewhere safe
+    names = {'R': {'_': {'etype': 'fernet'}}}
+    etype = conff.generate_key(names)()
+    # or just
+    ekey = conff.generate_key()('fernet')
+
+    # encrypt data
+    # BIG WARNING: this should be retrieved somewhere secured for example in ~/.secret
+    # below just for example purposes
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+    # gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=
+    encrypted_value = conff.encrypt(names)('ACCESSSECRETPLAIN1234')
+
+    # decrypt data
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+    encrypted_value = 'gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w='
+    conff.decrypt(names)(encrypted_value)
+
 Test
 ~~~~
 
@@ -240,7 +427,15 @@ To test this project:
 
 .. code:: bash
 
+   # default test
    nose2
+
+   # test with coverage
+   nose2 --with-coverage
+
+   # test specific
+   nose2 conff.test.ConffTestCase.test_sample
+
 
 Other Open Source
 ~~~~~~~~~~~~~~~~~
@@ -250,3 +445,8 @@ This project uses other awesome projects:
 - `munch <https://github.com/Infinidat/munch>`_
 - `simpleeval <https://github.com/danthedeckie/simpleeval>`_
 - `cryptography <https://github.com/pyca/cryptography>`_
+
+Who uses conff?
+~~~~~~~~~~~~~~~
+
+Please send a PR to keep the list growing, if you may please add your handle and company.

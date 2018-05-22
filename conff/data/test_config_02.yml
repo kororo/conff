@@ -31,7 +31,7 @@ test_8:
   data2_4: 4
 # test 9: complex expressions
 test_9:
-  test_9_1: ([F.has([1, 2, 3], 2), F.has([1, 2, 3], 4)])
+  test_9_1: ([F.has([1, 2, 3], 2), F.has([1, 2, 3], 4), F.has({'a':'a'}, 'a'), F.has({'a':'a'}, 'b')])
   test_9_2: ([F.next([1, 2]), F.next('RO')])
   test_9_3: F.join(['1', '2', '3'])
   test_9_4: F.trim('/ro/ro  ')

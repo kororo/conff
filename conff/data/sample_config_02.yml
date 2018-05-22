@@ -1,0 +1,24 @@
+# this can be any name, as long as not reserved in Python
+shared:
+  project_path: /data/project
+  aws_cred:
+    region_name: ap-southeast-2
+    aws_access_key_id: ACCESSKEY1234
+    # F03
+    aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+
+job:
+  read_image:
+    # F01
+    root_path: R.shared.project_path + '/images_and_videos/'
+  analyse_image:
+    # F02
+    api_cred: R.shared.aws_cred
+    max_res: [1024, 768]
+  analyse_video:
+    # F04
+    api_cred: R.shared.aws_cred
+    max_res: [800, 600]
+  write_result:
+    # F05
+    output_path: R.shared.project_path + '/result.json'

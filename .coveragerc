@@ -4,4 +4,4 @@ omit = setup.py
     /home/travis/virtualenv/*
 
 [report]
-show_missing = False
+show_missing = True
