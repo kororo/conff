@@ -442,3 +442,8 @@ This project uses other awesome projects:
 - `munch <https://github.com/Infinidat/munch>`_
 - `simpleeval <https://github.com/danthedeckie/simpleeval>`_
 - `cryptography <https://github.com/pyca/cryptography>`_
+
+Who uses conff?
+~~~~~~~~~~~~~~~
+
+Please send a PR to keep the list growing, if you may please add your handle and company.
