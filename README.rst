@@ -51,7 +51,7 @@ TODO
   - [X] Setup travis
   - [X] Setup coveralls
 
-- [ ] Add more support on Python versions (based on. `Python versions <https://en.wikipedia.org/wiki/CPython#Version_history)>`_
+- [ ] Add more support on Python versions (based on. `Python versions <https://en.wikipedia.org/wiki/CPython#Version_history>`_
 
   - [ ] 2.7
   - [ ] 3.4
@@ -125,11 +125,11 @@ with set of tasks involve with AWS Rekognition. The steps will be more/less like
 
     1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
 
-    2. Analyse the images with AWS API
+    2. Analyse the images with AWS API, then goes (4)
 
-    3. Analyse the videos with AWS API
+    3. Analyse the videos with AWS API, then goes (4)
 
-    4. Write the result back to JSON file
+    4. Write the result back to JSON file, finished
 
 The configuration required:
 
@@ -137,7 +137,7 @@ The configuration required:
 
     2. Analyse images (AWS API credential and max resolution for image)
 
-    3. Analyse videos  (AWS API credential and max resolution for image)
+    3. Analyse videos (AWS API credential and max resolution for video)
 
     4. Write results (where is the result should be written)
 
@@ -446,9 +446,10 @@ Other Open Source
 
 This project uses other awesome projects:
 
+- `cryptography <https://github.com/pyca/cryptography>`_
 - `munch <https://github.com/Infinidat/munch>`_
 - `simpleeval <https://github.com/danthedeckie/simpleeval>`_
-- `cryptography <https://github.com/pyca/cryptography>`_
+- `yaml <https://github.com/yaml/pyyaml>`_
 
 Who uses conff?
 ~~~~~~~~~~~~~~~

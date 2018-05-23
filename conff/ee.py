@@ -2,7 +2,6 @@ import collections
 import copy
 import os
 import simpleeval
-import yaml
 from munch import Munch
 from simpleeval import EvalWithCompoundTypes
 from collections import OrderedDict as odict
@@ -47,6 +46,24 @@ def update_recursive(d, u):
         else:
             setattr(d, k, u2)
     return d
+
+
+def yaml_safe_load(stream):
+    import yaml
+    from yaml.resolver import BaseResolver
+
+    def ordered_load(stream, loader_cls):
+        class OrderedLoader(loader_cls):
+            pass
+
+        def construct_mapping(loader, node):
+            loader.flatten_mapping(node)
+            return odict(loader.construct_pairs(node))
+
+        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+        return yaml.load(stream, OrderedLoader)
+
+    return ordered_load(stream, yaml.SafeLoader)
 
 
 def filter_value(value):
@@ -195,15 +212,15 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
     return v
 
 
-def parse(root, names: dict = None, fns: dict = None, parent=None, errors: list = None):
+def parse(root, names: dict = None, fns: dict = None, errors: list = None):
     names = names if names else {'R': root}
     fns = fns if fns else {}
     errors = errors if type(errors) == list else []
     root_type = type(root)
-    if root_type == dict or root_type == collections.OrderedDict:
+    if root_type == dict or root_type == odict:
         root_keys = list(root.keys())
         for k, v in root.items():
-            root[k] = parse(root=v, names=names, fns=fns, parent=root, errors=errors)
+            root[k] = parse(root=v, names=names, fns=fns, errors=errors)
         if 'F.extend' in root_keys:
             root = fn_extend(root['F.extend'], root)
             if isinstance(root, dict):
@@ -213,7 +230,7 @@ def parse(root, names: dict = None, fns: dict = None, parent=None, errors: list 
             del root['F.update']
     elif root_type == list:
         for i, v in enumerate(root):
-            root[i] = parse(root=v, names=names, fns=fns, parent=root, errors=errors)
+            root[i] = parse(root=v, names=names, fns=fns, errors=errors)
     elif root_type == str:
         value = root
         if type(value) == str:
@@ -235,7 +252,7 @@ def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = No
     try:
         with open(fs_file_path) as stream:
             # load_yaml initial structure
-            data = yaml.safe_load(stream)
+            data = yaml_safe_load(stream)
             data['_'] = data['_'] if data.get('_') else {}
             data_internal = {'fs_path': fs_path, 'fs_root': fs_root}
             data_internal = {**{'etype': 'fernet'}, **data_internal, **params}

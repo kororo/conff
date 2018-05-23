@@ -1,6 +1,6 @@
 # Change Logs
 
-## 0.4
+## 0.4.2
 - Add support 3.5
 - Add more examples and tests
 - Expose more functions for encryption

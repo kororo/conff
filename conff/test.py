@@ -91,7 +91,9 @@ class ConffTestCase(TestCase):
             r1 = yaml.safe_load(stream)
         fs_path = self.get_test_data_path('sample_config_02.yml')
         ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        errors = []
+        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
+        print(errors)
         fs_path = self.get_test_data_path('sample_config_03.yml')
         r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
         self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
