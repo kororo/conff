@@ -2,7 +2,6 @@ import collections
 import copy
 import os
 import simpleeval
-import yaml
 from munch import Munch
 from simpleeval import EvalWithCompoundTypes
 from collections import OrderedDict as odict
@@ -47,6 +46,25 @@ def update_recursive(d, u):
         else:
             setattr(d, k, u2)
     return d
+
+
+def yaml_safe_load(stream):
+    import yaml
+    from collections import OrderedDict
+    from yaml.resolver import BaseResolver
+
+    def ordered_load(stream, loader_cls):
+        class OrderedLoader(loader_cls):
+            pass
+
+        def construct_mapping(loader, node):
+            loader.flatten_mapping(node)
+            return OrderedDict(loader.construct_pairs(node))
+
+        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+        return yaml.load(stream, OrderedLoader)
+
+    return ordered_load(stream, yaml.SafeLoader)
 
 
 def filter_value(value):
@@ -237,7 +255,8 @@ def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = No
     try:
         with open(fs_file_path) as stream:
             # load_yaml initial structure
-            data = yaml.safe_load(stream)
+            data = yaml_safe_load(stream)
+            print(type(data))
             data['_'] = data['_'] if data.get('_') else {}
             data_internal = {'fs_path': fs_path, 'fs_root': fs_root}
             data_internal = {**{'etype': 'fernet'}, **data_internal, **params}
