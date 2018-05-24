@@ -1,4 +1,4 @@
-# this can be any name, global, conf, shared
+# this can be any name, as long as not reserved in Python
 shared:
   project_path: /data/project
   analyse_image_video:
