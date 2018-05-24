@@ -18,7 +18,7 @@ Simple config parser with evaluator library.
 
 
 Why Another Config Parser Module?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 This project inspired of the necessity complex config in a project. By means complex:
 
@@ -40,43 +40,15 @@ This project inspired of the necessity complex config in a project. By means com
   - Add custom functions in Python
   - Link name data from Python
 
-TODO
-~~~~
+Important Notes
+---------------
 
-- [X] Setup basic necessity
+In Python 3.5, the dict data type has inconsistent ordering, it is **STRONGLY** recommended to use **OrderedDict** if
+you manually parse object. If you load from YAML file, the library already handled it.
 
-  - [X] Stop procrastinating
-  - [X] Project registration in pypi
-  - [X] Create unit tests
-  - [X] Setup travis
-  - [X] Setup coveralls
-
-- [ ] Add more support on Python versions (based on. `Python versions <https://en.wikipedia.org/wiki/CPython#Version_history>`_
-
-  - [ ] 2.7
-  - [ ] 3.4
-  - [X] 3.5
-  - [X] 3.6
-
-- [ ] Features
-
-  - [X] Add more functions for encryption
-  - [ ] Test on multilanguage
-  - [ ] Add better exception handling
-  - [ ] Add circular dependencies error
-  - [ ] Ensure this is good on production environment
-  - [X] Add options to give more flexibility
-  - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
-
-- [ ] Improve docs
-
-  - [ ] Add more code comments and visibilities
-  - [ ] Make github layout code into two left -> right
-  - [X] Put more examples
-  - [ ] Setup readthedocs
 
 Install
-~~~~~~~
+-------
 
 .. code:: bash
 
@@ -116,12 +88,157 @@ import files
    r = {'conf': {'shared_conf': 1}}
 
 
+Examples
+--------
+
+More advances examples:
+
+Parse with simple expression
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   r = conff.parse('1 + 2')
+   r = 3
+
+Parse object
+^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   r = conff.parse({"math": "1 + 2"})
+   r = {'math': 3}
+
+Ignore expression (declare it as string)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   r = conff.parse('"1 + 2"')
+   r = '1 + 2'
+
+Parse error behaviours
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   errors = []
+   r = conff.parse({"math": "1 / 0"}, errors=errors)
+   r = {'math': '1 / 0'}
+   errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
+
+Parse with functions
+^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   def fn_add(a, b):
+       return a + b
+   r = conff.parse('F.add(1, 2)', fns={'add': fn_add})
+   r = 3
+
+Parse with names
+^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   r = conff.parse('a + b', names={'a': 1, 'b': 2})
+   r = 3
+
+Parse with extends
+^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   data = {
+       't1': {'a': 'a'},
+       't2': {
+           'F.extend': 'R.t1',
+           'b': 'b'
+       }
+   }
+   r = conff.parse(data)
+   r = {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
+
+Parse with updates
+^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   data = {
+       't1': {'a': 'a'},
+       't2': {
+           'b': 'b',
+           'F.update': {
+               'c': 'c'
+           },
+       }
+   }
+   r = conff.parse(data)
+   r = {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
+
+Parse with extends and updates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   data = {
+       't1': {'a': 'a'},
+       't2': {
+           'F.extend': 'R.t1',
+           'b': 'b',
+           'F.update': {
+               'a': 'A',
+               'c': 'c'
+           },
+       }
+   }
+   r = conff.parse(data)
+   r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
+
+Encryption
+----------
+
+This section to help you to quickly generate encryption key, initial encrypt values and test to decrypt the value.
+
+.. code:: python
+
+    import conff
+    # generate key, save it somewhere safe
+    names = {'R': {'_': {'etype': 'fernet'}}}
+    etype = conff.generate_key(names)()
+    # or just
+    ekey = conff.generate_key()('fernet')
+
+    # encrypt data
+    # BIG WARNING: this should be retrieved somewhere secured for example in ~/.secret
+    # below just for example purposes
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+    # gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=
+    encrypted_value = conff.encrypt(names)('ACCESSSECRETPLAIN1234')
+
+    # decrypt data
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+    encrypted_value = 'gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w='
+    conff.decrypt(names)(encrypted_value)
+
 Real World Examples
 -------------------
 
 All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data>`_.
 Imagine you start an important project, your code need to analyse image/videos which involves workflow
-with set of tasks involve with AWS Rekognition. The steps will be more/less like this:
+with set of tasks with AWS Rekognition. The steps will be more/less like this:
 
     1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
 
@@ -244,7 +361,7 @@ This is just demonstration purposes to see the full capabilities of this library
 
 .. code:: yaml
 
-    # this can be any name, global, conf, shared
+    # this can be any name, as long as not reserved in Python
     shared:
       project_path: /data/project
       analyse_image_video:
@@ -281,151 +398,8 @@ and sample_config_03.yml.
     self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
     self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
-Examples
---------
-
-More advances examples:
-
-Parse with simple expression
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   r = conff.parse('1 + 2')
-   r = 3
-
-Parse object
-^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   r = conff.parse({"math": "1 + 2"})
-   r = {'math': 3}
-
-Ignore expression (declare it as string)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   r = conff.parse('"1 + 2"')
-   r = '1 + 2'
-
-Parse error behaviours
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   errors = []
-   r = conff.parse({"math": "1 / 0"}, errors=errors)
-   r = {'math': '1 / 0'}
-   errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
-
-Parse with functions
-^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   def fn_add(a, b):
-       return a + b
-   r = conff.parse('F.add(1, 2)', fns={'add': fn_add})
-   r = 3
-
-Parse with names
-^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   r = conff.parse('a + b', names={'a': 1, 'b': 2})
-   r = 3
-
-Parse with extends
-^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   data = {
-       't1': {'a': 'a'},
-       't2': {
-           'F.extend': 'R.t1',
-           'b': 'b'
-       }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
-
-Parse with updates
-^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   data = {
-       't1': {'a': 'a'},
-       't2': {
-           'b': 'b',
-           'F.update': {
-               'c': 'c'
-           },
-       }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
-
-Parse with extends and updates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   data = {
-       't1': {'a': 'a'},
-       't2': {
-           'F.extend': 'R.t1',
-           'b': 'b',
-           'F.update': {
-               'a': 'A',
-               'c': 'c'
-           },
-       }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
-
-Encryption
-~~~~~~~~~~
-
-.. code:: python
-
-    import conff
-    # generate key, save it somewhere safe
-    names = {'R': {'_': {'etype': 'fernet'}}}
-    etype = conff.generate_key(names)()
-    # or just
-    ekey = conff.generate_key()('fernet')
-
-    # encrypt data
-    # BIG WARNING: this should be retrieved somewhere secured for example in ~/.secret
-    # below just for example purposes
-    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
-    # gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=
-    encrypted_value = conff.encrypt(names)('ACCESSSECRETPLAIN1234')
-
-    # decrypt data
-    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
-    encrypted_value = 'gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w='
-    conff.decrypt(names)(encrypted_value)
-
 Test
-~~~~
+----
 
 To test this project:
 
@@ -440,9 +414,45 @@ To test this project:
    # test specific
    nose2 conff.test.ConffTestCase.test_sample
 
+TODO
+----
+
+- [X] Setup basic necessity
+
+  - [X] Stop procrastinating
+  - [X] Project registration in pypi
+  - [X] Create unit tests
+  - [X] Setup travis
+  - [X] Setup coveralls
+
+- [ ] Add more support on `Python versions <https://en.wikipedia.org/wiki/CPython#Version_history>`_
+
+  - [ ] 2.7
+  - [ ] 3.4
+  - [X] 3.5
+  - [X] 3.6
+
+- [ ] Features
+
+  - [X] Add more functions for encryption
+  - [ ] Test on multilanguage
+  - [ ] Add better exception handling
+  - [ ] Add circular dependencies error
+  - [ ] Ensure this is good on production environment
+  - [X] Add options to give more flexibility
+  - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
+  - [ ] Improve F.extend to allow list to be extended
+  - [ ] Allow conff to update existing config object
+
+- [ ] Improve docs
+
+  - [ ] Add more code comments and visibilities
+  - [ ] Make github layout code into two left -> right
+  - [X] Put more examples
+  - [ ] Setup readthedocs
 
 Other Open Source
-~~~~~~~~~~~~~~~~~
+-----------------
 
 This project uses other awesome projects:
 
@@ -452,6 +462,6 @@ This project uses other awesome projects:
 - `yaml <https://github.com/yaml/pyyaml>`_
 
 Who uses conff?
-~~~~~~~~~~~~~~~
+---------------
 
 Please send a PR to keep the list growing, if you may please add your handle and company.
