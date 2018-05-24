@@ -208,6 +208,8 @@ Parse with extends and updates
 Encryption
 ----------
 
+This section to help you to quickly generate encryption key, initial encrypt values and test to decrypt the value.
+
 .. code:: python
 
     import conff
@@ -440,6 +442,7 @@ TODO
   - [X] Add options to give more flexibility
   - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
   - [ ] Improve F.extend to allow list to be extended
+  - [ ] Allow conff to update existing config object
 
 - [ ] Improve docs
 
