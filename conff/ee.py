@@ -105,6 +105,15 @@ def fn_str_trim(val: str, cs: list = None):
         val = val.strip(c)
     return val
 
+def fn_linspace(start, end, steps):
+    delta = (end-start)/(steps-1)
+    return [start + delta*i for i in range(steps)]
+
+def fn_arange(start, end, delta):
+    vals = [start]
+    while vals[-1] + delta <= end:
+        vals.append(vals[-1] + delta)
+    return vals
 
 def fn_extend(val, val2):
     val = copy.deepcopy(val)
@@ -178,7 +187,36 @@ def fn_inc_names(names: dict):
             data = load(fs_path=fs_path, fs_root=fs_root, errors=errors)
         return data
 
-    return fn_inc
+ def fn_foreach(foreach, parent, names={}, fns={}):
+    start = foreach["start"]
+    end = foreach["end"]
+    step = foreach["step"]
+    if foreach['itertype'] == 'linspace':
+        vals = fn_linspace(start, end, step)
+    elif foreach['itertype'] == 'arange':
+        vals = fn_arange(start, end, step)
+    else:
+        raise ValueError('Invalid itertype in F.foreach')
+
+    template = foreach['template']
+    if not isinstance(template, dict):
+        raise ValueError('template item of F.foreach must be a dict')
+    for i, v in enumerate(vals):
+        print('-'*10)
+        print('iteration {}'.format(i))
+        print('-'*10)
+        names.update({'index': i, 'value': v})
+        print(names)
+        result = {}
+        for key, val in template.items():
+            pkey = parse_expr(key, names=names, fns=fns)
+            pval = parse(copy.copy(val), names=names)
+            result[pkey] = pval
+        print(result)
+        parent.update(result)
+        print(parent)
+
+   return fn_inc
 
 
 def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
@@ -202,6 +240,9 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
         'decrypt': fn_decrypt_names(names2),
         'inc': fn_inc_names(names2)
     })}
+    # print(fns)
+    print("names2 = {}".format(names2))
+    print("expr = {}".format(expr))
     s = EvalWithCompoundTypes(names=names2, functions=fns)
     try:
         v = s.eval(expr=expr)
@@ -210,6 +251,7 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
         errors.append([expr, ex])
     v = filter_value(v)
     return v
+
 
 
 def parse(root, names: dict = None, fns: dict = None, errors: list = None):
@@ -228,6 +270,13 @@ def parse(root, names: dict = None, fns: dict = None, errors: list = None):
         if 'F.update' in root_keys:
             fn_update(root['F.update'], root)
             del root['F.update']
+        if 'F.foreach' in root_keys:
+            print('For each in key!')
+            for k in ('start', 'end', 'step', 'itertype', 'template'):
+                if k not in root['F.foreach']:
+                    raise ValueError('F.foreach missing key: {}'.format(k))
+            fn_foreach(root['F.foreach'], root, names=names, fns=fns)
+            del root['F.foreach']
     elif root_type == list:
         for i, v in enumerate(root):
             root[i] = parse(root=v, names=names, fns=fns, errors=errors)
