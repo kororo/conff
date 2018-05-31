@@ -436,13 +436,16 @@ TODO
 
   - [X] Add more functions for encryption
   - [ ] Test on multilanguage
-  - [ ] Add better exception handling
   - [ ] Add circular dependencies error
   - [ ] Ensure this is good on production environment
   - [X] Add options to give more flexibility
   - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
   - [ ] Improve F.extend to allow list to be extended
   - [ ] Allow conff to update existing config object
+  - [ ] Have more converter from/to excel, xml
+  - [ ] Feature to display warning and error messages (for example, missing parameters, logging purposes)
+  - [ ] Add options to extend structure in template (for example, https://github.com/defunkt/pystache), the idea is render the values in string, convert it to object and attach it back. This will also inherit lots of feature such as loop, decision blocks
+  - [ ] Separate current functions into built-in and restructure it (first break-changes to organise all the built-in functions into more better way)
 
 - [ ] Improve docs
 
@@ -450,6 +453,7 @@ TODO
   - [ ] Make github layout code into two left -> right
   - [X] Put more examples
   - [ ] Setup readthedocs
+  - [ ] Add code conduct, issue template into git project.
 
 Other Open Source
 -----------------
