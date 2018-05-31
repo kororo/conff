@@ -26,8 +26,11 @@ class ConffTestCase(TestCase):
     def test_complex_load_yml(self):
         fs_path = self.get_test_data_path('test_config_02.yml')
         key = Fernet.generate_key()
-        data = conff.load(fs_path=fs_path, params={'ekey': key})
+        errs = []
+        data = conff.load(fs_path=fs_path, params={'ekey': key}, errors=errs)
         data = data if data else {}
+        if errs:
+            print("Error list: ", errs)
         # test simple types
         self.assertEqual(data.get('test_1'), 'test_1')
         self.assertEqual(data.get('test_2'), 2)
@@ -62,6 +65,18 @@ class ConffTestCase(TestCase):
                         'test_13_6': {'test_13_6_1': 1, 'test_13_6_2': {'test_13_6_2_1': 1, 'test_13_6_2_2': 2}},
                         'test_13_4': 4}
         self.assertDictEqual(data.get('test_14'), data_test_14)
+        # test foreach with linspace
+        data_test_15 = {'test0': {'value': 0, 'length': 3},
+                        'test1': {'value': 3, 'length': 3},
+                        'test2': {'value': 6, 'length': 3}}
+        self.assertDictEqual(data.get('test_15'), data_test_15)
+        # test foreach with arange. Should get same result as above
+        data_test_16 = data_test_15
+        self.assertDictEqual(data.get('test_16'), data_test_16)
+        # test foreach with arange. Testing behavior of arange
+        data_test_17 = {'test0': {'value': 0, 'length': 2},
+                        'test1': {'value': 4, 'length': 2}}
+        self.assertDictEqual(data.get('test_17'), data_test_17)
 
     def test_error_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_03.yml')

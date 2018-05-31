@@ -186,37 +186,25 @@ def fn_inc_names(names: dict):
         if itype == 'yaml':
             data = load(fs_path=fs_path, fs_root=fs_root, errors=errors)
         return data
+    return fn_inc
 
- def fn_foreach(foreach, parent, names={}, fns={}):
-    start = foreach["start"]
-    end = foreach["end"]
-    step = foreach["step"]
-    if foreach['itertype'] == 'linspace':
-        vals = fn_linspace(start, end, step)
-    elif foreach['itertype'] == 'arange':
-        vals = fn_arange(start, end, step)
-    else:
-        raise ValueError('Invalid itertype in F.foreach')
 
+def fn_foreach(foreach, parent, names={}, fns={}):
     template = foreach['template']
     if not isinstance(template, dict):
         raise ValueError('template item of F.foreach must be a dict')
-    for i, v in enumerate(vals):
-        print('-'*10)
-        print('iteration {}'.format(i))
-        print('-'*10)
-        names.update({'index': i, 'value': v})
-        print(names)
+    for i, v in enumerate(foreach['values']):
+        names.update({'loop': {'index': i, 'value': v,
+                                'length': len(foreach['values'])}})
         result = {}
         for key, val in template.items():
             pkey = parse_expr(key, names=names, fns=fns)
             pval = parse(copy.copy(val), names=names)
             result[pkey] = pval
-        print(result)
         parent.update(result)
-        print(parent)
-
-   return fn_inc
+    # remove this specific foreach loop info from names dict so we don't break
+    # any subsequent foreach loops
+    del names['loop']
 
 
 def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
@@ -238,11 +226,10 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
         'update': fn_update,
         'encrypt': fn_encrypt_names(names2),
         'decrypt': fn_decrypt_names(names2),
-        'inc': fn_inc_names(names2)
+        'inc': fn_inc_names(names2),
+        'linspace': fn_linspace,
+        'arange': fn_arange
     })}
-    # print(fns)
-    print("names2 = {}".format(names2))
-    print("expr = {}".format(expr))
     s = EvalWithCompoundTypes(names=names2, functions=fns)
     try:
         v = s.eval(expr=expr)
@@ -251,7 +238,6 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
         errors.append([expr, ex])
     v = filter_value(v)
     return v
-
 
 
 def parse(root, names: dict = None, fns: dict = None, errors: list = None):
@@ -271,8 +257,7 @@ def parse(root, names: dict = None, fns: dict = None, errors: list = None):
             fn_update(root['F.update'], root)
             del root['F.update']
         if 'F.foreach' in root_keys:
-            print('For each in key!')
-            for k in ('start', 'end', 'step', 'itertype', 'template'):
+            for k in ('values', 'template'):
                 if k not in root['F.foreach']:
                     raise ValueError('F.foreach missing key: {}'.format(k))
             fn_foreach(root['F.foreach'], root, names=names, fns=fns)
