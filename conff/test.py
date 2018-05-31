@@ -29,8 +29,6 @@ class ConffTestCase(TestCase):
         errs = []
         data = conff.load(fs_path=fs_path, params={'ekey': key}, errors=errs)
         data = data if data else {}
-        if errs:
-            print("Error list: ", errs)
         # test simple types
         self.assertEqual(data.get('test_1'), 'test_1')
         self.assertEqual(data.get('test_2'), 2)
@@ -77,9 +75,18 @@ class ConffTestCase(TestCase):
         data_test_17 = {'test0': {'value': 0, 'length': 2},
                         'test1': {'value': 4, 'length': 2}}
         self.assertDictEqual(data.get('test_17'), data_test_17)
+        # test foreach exceptions
 
     def test_error_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_03.yml')
+        data = conff.load(fs_path=fs_path)
+        self.assertIsNone(data)
+
+    def test_error_foreach(self):
+        fs_path = self.get_test_data_path('malformed_foreach_01.yml')
+        data = conff.load(fs_path=fs_path)
+        self.assertIsNone(data)
+        fs_path = self.get_test_data_path('malformed_foreach_02.yml')
         data = conff.load(fs_path=fs_path)
         self.assertIsNone(data)
 

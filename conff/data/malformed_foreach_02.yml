@@ -1,0 +1,4 @@
+test:
+  F.foreach:
+    values: F.arange(0, 6, 4)
+    template: 'notadict'
