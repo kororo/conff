@@ -48,22 +48,25 @@ def update_recursive(d, u):
     return d
 
 
-def yaml_safe_load(stream):
+def yaml_safe_load(stream, ordered=False):
     import yaml
     from yaml.resolver import BaseResolver
 
-    def ordered_load(stream, loader_cls):
-        class OrderedLoader(loader_cls):
-            pass
+    if ordered:
+        def ordered_load(stream, loader_cls):
+            class OrderedLoader(loader_cls):
+                pass
 
-        def construct_mapping(loader, node):
-            loader.flatten_mapping(node)
-            return odict(loader.construct_pairs(node))
+            def construct_mapping(loader, node):
+                loader.flatten_mapping(node)
+                return odict(loader.construct_pairs(node))
 
-        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
-        return yaml.load(stream, OrderedLoader)
+            OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+            return yaml.load(stream, OrderedLoader)
 
-    return ordered_load(stream, yaml.SafeLoader)
+        return ordered_load(stream, yaml.SafeLoader)
+    else:
+        return yaml.safe_load(stream)
 
 
 def filter_value(value):
@@ -79,6 +82,14 @@ def filter_value(value):
 
 def fn_str(val):
     return str(val)
+
+
+def fn_float(val):
+    return float(val)
+
+
+def fn_int(val):
+    return int(val)
 
 
 def fn_has(val, name):
@@ -105,15 +116,18 @@ def fn_str_trim(val: str, cs: list = None):
         val = val.strip(c)
     return val
 
+
 def fn_linspace(start, end, steps):
     delta = (end-start)/(steps-1)
     return [start + delta*i for i in range(steps)]
+
 
 def fn_arange(start, end, delta):
     vals = [start]
     while vals[-1] + delta <= end:
         vals.append(vals[-1] + delta)
     return vals
+
 
 def fn_extend(val, val2):
     val = copy.deepcopy(val)
@@ -195,7 +209,7 @@ def fn_foreach(foreach, parent, names={}, fns={}):
         raise ValueError('template item of F.foreach must be a dict')
     for i, v in enumerate(foreach['values']):
         names.update({'loop': {'index': i, 'value': v,
-                                'length': len(foreach['values'])}})
+                               'length': len(foreach['values'])}})
         result = {}
         for key, val in template.items():
             pkey = parse_expr(key, names=names, fns=fns)
@@ -218,6 +232,8 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
             'join': fn_list_join
         },
         'str': fn_str,
+        'float': fn_float,
+        'int': fn_int,
         'has': fn_has,
         'next': fn_list_next,
         'join': fn_list_join,
