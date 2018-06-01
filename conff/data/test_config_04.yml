@@ -1,0 +1,19 @@
+test_13:
+  F.update:
+    test_13_1: 1
+    test_13_2: '2'
+    test_13_3: 1 + 2
+    test_13_5:
+      test_13_5_1: 1
+    test_13_6:
+      test_13_6_1: 1
+test_14:
+  F.extend: R.test_13
+  F.update:
+    test_13_1: 11
+    test_13_4: R.test_13.test_13_3 + 1
+    test_13_5: 5
+    test_13_6:
+      test_13_6_2:
+        test_13_6_2_1: 1
+        test_13_6_2_2: 2

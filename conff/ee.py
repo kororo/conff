@@ -23,8 +23,8 @@ class Munch2(Munch):
 
 def update_recursive(d, u):
     """
-    Update dictionary recursively. It traverse any object implements "collections.Mapping", anything else,
-    it overwrites the original value.
+    Update dictionary recursively. It traverse any object implements
+    "collections.Mapping", anything else, it overwrites the original value.
     :param d: Original dictionary to be updated
     :param u: Value dictionary
     :return: Updated dictionary after merged
@@ -224,7 +224,6 @@ def fn_foreach(foreach, parent, names={}, fns={}):
 def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
     errors = errors if type(errors) == list else []
     names2 = Munch2.fromDict({**names, **{
-
     }})
     fns = {'F': update_recursive(fns, {
         'list': {

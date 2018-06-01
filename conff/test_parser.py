@@ -27,15 +27,22 @@ class ConffTestCase(TestCase):
 
     def test_simple_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_01.yml')
-        data = conff.load(fs_path=fs_path)
+        p = conff.Parser()
+        data = p.parse_file(fs_path=fs_path)
         data = data if data else {}
         self.assertDictEqual(data, {'test_1': 'test_1', 'test_2': ''})
 
+    def test_ext_up_load_yaml(self):
+        fs_path = self.get_test_data_path('test_config_04.yml')
+        p = conff.Parser()
+        data = p.parse_file(fs_path=fs_path)
+        data = data if data else {}
+
     def test_complex_load_yml(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_02.yml')
-        key = Fernet.generate_key()
-        errs = []
-        data = conff.load(fs_path=fs_path, params={'ekey': key}, errors=errs)
+        key = p.generate_crypto_key()
+        data = p.parse_file(fs_path=fs_path)
         data = data if data else {}
         # test simple types
         self.assertEqual(data.get('test_1'), 'test_1')
@@ -83,7 +90,6 @@ class ConffTestCase(TestCase):
         data_test_17 = {'test0': {'value': 0, 'length': 2},
                         'test1': {'value': 4, 'length': 2}}
         self.assertDictEqual(data.get('test_17'), data_test_17)
-        # test foreach exceptions
 
     def test_error_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_03.yml')
@@ -117,6 +123,7 @@ class ConffTestCase(TestCase):
     # def test_sample(self):
     #     # nose2 conff.test.ConffTestCase.test_sample
     #     fs_path = self.get_test_data_path('sample_config_01.yml')
+    #     print(fs_path)
     #     with open(fs_path) as stream:
     #         r1 = yaml.safe_load(stream)
     #     fs_path = self.get_test_data_path('sample_config_02.yml')
