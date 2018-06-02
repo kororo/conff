@@ -18,6 +18,7 @@ class ConffTestCase(TestCase):
         test_data_path = os.path.join(current_path, 'data')
         self.test_data_path = tempfile.mkdtemp()
         copy_tree(test_data_path, self.test_data_path)
+        self.maxDiff = None
 
     def tearDown(self):
         shutil.rmtree(self.test_data_path)
@@ -90,23 +91,53 @@ class ConffTestCase(TestCase):
         data_test_17 = {'test0': {'value': 0, 'length': 2},
                         'test1': {'value': 4, 'length': 2}}
         self.assertDictEqual(data.get('test_17'), data_test_17)
+        data_test_18 = {'test_18_1': 3} 
+        self.assertDictEqual(data.get('test_18'), data_test_18)
+
 
     def test_error_load_yaml(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_03.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(TypeError) as context:
+            data = p.parse_file(fs_path=fs_path)
 
     def test_error_foreach(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('malformed_foreach_01.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(ValueError) as context:
+            data = p.parse_file(fs_path=fs_path)
         fs_path = self.get_test_data_path('malformed_foreach_02.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(ValueError) as context:
+            data = p.parse_file(fs_path=fs_path)
 
     def test_parse(self):
-        data = conff.parse('{"a": "a", "b": "1/0"}', names={}, fns={})
+        p = conff.Parser(names={}, fns={})
+        data = p.parse_expr('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+
+    def test_parse_dict_with_names(self):
+        names = {'c': 1, 'd': 2}
+        p = conff.Parser(names=names, fns={})
+        data = p.parse_dict({"a": "a", "b": "c + d"})
+        self.assertDictEqual(data, {'a': 'a', 'b': 3})
+
+    def test_missing_operators(self):
+        names = {'c': 1, 'd': 2}
+        p = conff.Parser(names=names, fns={}, operators={'not': 'an_operator'})
+        with self.assertRaises(KeyError) as context:
+            data = p.parse_dict({"a": "a", "b": "c + d"})
+        self.assertTrue("<class '_ast.Add'>" in str(context.exception))
+
+    def test_generate_crypto(self):
+        p = conff.Parser()
+        del p._params['etype']
+        key = p.generate_crypto_key()
+        self.assertTrue(key is not None)
+        self.assertTrue(p._params['ekey'] is not None)
+        p._params['etype'] = 'nonsense'
+        key = p.generate_crypto_key()
+        self.assertTrue(key is None)
+        self.assertTrue(p._params['ekey'] is None)
 
     def test_encryption(self):
         # generate key, save it somewhere safe
@@ -120,21 +151,19 @@ class ConffTestCase(TestCase):
         value = conff.decrypt(names)(encrypted_value)
         self.assertEqual(original_value, value, 'Value mismatch')
 
-    # def test_sample(self):
-    #     # nose2 conff.test.ConffTestCase.test_sample
-    #     fs_path = self.get_test_data_path('sample_config_01.yml')
-    #     print(fs_path)
-    #     with open(fs_path) as stream:
-    #         r1 = yaml.safe_load(stream)
-    #     fs_path = self.get_test_data_path('sample_config_02.yml')
-    #     ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    #     errors = []
-    #     r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
-    #     print(errors)
-    #     fs_path = self.get_test_data_path('sample_config_03.yml')
-    #     r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
-    #     self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
-    #     self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
+    def test_sample(self):
+        # nose2 conff.test.ConffTestCase.test_sample
+        fs_path = self.get_test_data_path('sample_config_01.yml')
+        with open(fs_path) as stream:
+            r1 = yaml.safe_load(stream)
+        fs_path = self.get_test_data_path('sample_config_02.yml')
+        ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+        errors = []
+        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
+        fs_path = self.get_test_data_path('sample_config_03.yml')
+        r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
+        self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
     def test_object(self):
         # nose2 conff.test.ConffTestCase.test_object

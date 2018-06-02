@@ -18,6 +18,7 @@ class ConffTestCase(TestCase):
         test_data_path = os.path.join(current_path, 'data')
         self.test_data_path = tempfile.mkdtemp()
         copy_tree(test_data_path, self.test_data_path)
+        self.maxDiff = None
 
     def tearDown(self):
         shutil.rmtree(self.test_data_path)
@@ -114,20 +115,19 @@ class ConffTestCase(TestCase):
         value = conff.decrypt(names)(encrypted_value)
         self.assertEqual(original_value, value, 'Value mismatch')
 
-    # def test_sample(self):
-    #     # nose2 conff.test.ConffTestCase.test_sample
-    #     fs_path = self.get_test_data_path('sample_config_01.yml')
-    #     with open(fs_path) as stream:
-    #         r1 = yaml.safe_load(stream)
-    #     fs_path = self.get_test_data_path('sample_config_02.yml')
-    #     ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    #     errors = []
-    #     r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
-    #     print(errors)
-    #     fs_path = self.get_test_data_path('sample_config_03.yml')
-    #     r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
-    #     self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
-    #     self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
+    def test_sample(self):
+        # nose2 conff.test.ConffTestCase.test_sample
+        fs_path = self.get_test_data_path('sample_config_01.yml')
+        with open(fs_path) as stream:
+            r1 = yaml.safe_load(stream)
+        fs_path = self.get_test_data_path('sample_config_02.yml')
+        ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+        errors = []
+        r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
+        fs_path = self.get_test_data_path('sample_config_03.yml')
+        r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
+        self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
     def test_object(self):
         # nose2 conff.test.ConffTestCase.test_object

@@ -301,7 +301,7 @@ def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = No
     try:
         with open(fs_file_path) as stream:
             # load_yaml initial structure
-            data = yaml_safe_load(stream)
+            data = yaml_safe_load(stream, ordered=True)
             data['_'] = data['_'] if data.get('_') else {}
             data_internal = {'fs_path': fs_path, 'fs_root': fs_root}
             data_internal = {**{'etype': 'fernet'}, **data_internal, **params}

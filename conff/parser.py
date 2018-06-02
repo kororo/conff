@@ -80,7 +80,7 @@ class Parser:
             self._names.update(names)
             data = self._parse(data)
         # Delete anything specific to this file so we can reuse the parser
-        for k in ('fs_path', 'fs_path', 'R'):
+        for k in ('fs_path', 'fs_root', 'R'):
             if k in self._params:
                 del self._params[k]
         return data
@@ -92,10 +92,6 @@ class Parser:
         names = {'R': in_data}
         self._names.update(names)
         data = self._parse(in_data)
-        # Delete anything specific to this input so we can reuse the parser
-        for k in ('fs_path', 'fs_path', 'R'):
-            if k in self._params:
-                del self._params[k]
         return data
 
     def parse_expr(self, expr: str):
