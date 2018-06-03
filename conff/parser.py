@@ -1,17 +1,24 @@
 import os
 import collections
-import yaml
-import hashlib
-import six
 import copy
 import simpleeval
-import pprint
+from munch import Munch
 from simpleeval import EvalWithCompoundTypes
-from collections import Iterable, MutableMapping, OrderedDict
 from collections import OrderedDict as odict
 from cryptography.fernet import Fernet
 
-from .ee import yaml_safe_load, Munch2, filter_value, update_recursive
+
+class Munch2(Munch):
+    """
+    Provide easy way to access item in object by dot-notation.
+    Example:
+        obj = {'item': 'value'}
+        # old way
+        value = obj.get('item')
+        # with munch
+        value = obj.item
+    """
+    pass
 
 
 class Parser:
@@ -30,7 +37,7 @@ class Parser:
         """
 
         self._params = params if params is not None else {}
-        self._params.update({'etype': 'fernet'})
+        self._params.update({'etype': self._params.get('etype', 'fernet')})
         self._operators = operators if operators is not None else simpleeval.DEFAULT_OPERATORS
         opts = opts if opts is not None else {}
         self.opts.update(opts)
@@ -75,7 +82,7 @@ class Parser:
         self._params.update({'fs_path': fs_path, 'fs_root': fs_root})
         with open(fs_file_path) as stream:
             # load_yaml initial structure
-            data = yaml_safe_load(stream, ordered=True)
+            data = yaml_safe_load(stream)
             names = {'R': data}
             self._names.update(names)
             data = self._parse(data)
@@ -168,11 +175,7 @@ class Parser:
         self._params['ekey'] so it is accessible to encrypt parsing functions.
         Also returns the key
         """
-
-        try:
-            etype = self._params['etype']
-        except KeyError:
-            etype = 'fernet'
+        etype = self._params.get('etype')
         if etype == 'fernet':
             key = Fernet.generate_key()
         else:
@@ -211,8 +214,8 @@ class Parser:
         return val
 
     def fn_linspace(self, start, end, steps):
-        delta = (end-start)/(steps-1)
-        return [start + delta*i for i in range(steps)]
+        delta = (end - start) / (steps - 1)
+        return [start + delta * i for i in range(steps)]
 
     def fn_arange(self, start, end, delta):
         vals = [start]
@@ -240,6 +243,7 @@ class Parser:
                 return p
             else:
                 return u
+
         walk(update, parent)
 
     def fn_encrypt(self, data):
@@ -274,7 +278,7 @@ class Parser:
             raise ValueError('template item of F.foreach must be a dict')
         for i, v in enumerate(foreach['values']):
             self._names.update({'loop': {'index': i, 'value': v,
-                                'length': len(foreach['values'])}})
+                                         'length': len(foreach['values'])}})
             result = {}
             for key, val in template.items():
                 pkey = self.parse_expr(key)
@@ -284,3 +288,57 @@ class Parser:
         # remove this specific foreach loop info from names dict so we don't
         # break any subsequent foreach loops
         del self._names['loop']
+
+
+def update_recursive(d, u):
+    """
+    Update dictionary recursively. It traverse any object implements
+    "collections.Mapping", anything else, it overwrites the original value.
+    :param d: Original dictionary to be updated
+    :param u: Value dictionary
+    :return: Updated dictionary after merged
+    """
+    for k, v in u.items():
+        if isinstance(d, dict):
+            d2 = d.get(k, {})
+        else:
+            d2 = getattr(d, k, object())
+
+        if isinstance(v, dict):
+            r = update_recursive(d2, v)
+            u2 = r
+        else:
+            u2 = u[k]
+
+        if isinstance(d, dict):
+            d[k] = u2
+        else:
+            setattr(d, k, u2)
+    return d
+
+
+def yaml_safe_load(stream):
+    import yaml
+    from yaml.resolver import BaseResolver
+
+    def ordered_load(stream, loader_cls):
+        class OrderedLoader(loader_cls):
+            pass
+
+        def construct_mapping(loader, node):
+            loader.flatten_mapping(node)
+            return odict(loader.construct_pairs(node))
+
+        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+        return yaml.load(stream, OrderedLoader)
+
+    return ordered_load(stream, yaml.SafeLoader)
+
+
+def filter_value(value):
+    if isinstance(value, str):
+        if value == '[empty]':
+            value = ''
+    if isinstance(value, str):
+        value = value.strip()
+    return value

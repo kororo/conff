@@ -3,10 +3,7 @@ import tempfile
 import shutil
 from distutils.dir_util import copy_tree
 from unittest import TestCase
-
 import yaml
-from cryptography.fernet import Fernet
-
 import conff
 
 
@@ -91,9 +88,8 @@ class ConffTestCase(TestCase):
         data_test_17 = {'test0': {'value': 0, 'length': 2},
                         'test1': {'value': 4, 'length': 2}}
         self.assertDictEqual(data.get('test_17'), data_test_17)
-        data_test_18 = {'test_18_1': 3} 
+        data_test_18 = {'test_18_1': 3}
         self.assertDictEqual(data.get('test_18'), data_test_18)
-
 
     def test_error_load_yaml(self):
         p = conff.Parser()
@@ -115,6 +111,19 @@ class ConffTestCase(TestCase):
         data = p.parse_expr('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
 
+    def test_parse_with_fns(self):
+        def fn_add(a, b):
+            return a + b
+
+        p = conff.Parser(names={}, fns={
+            'add': fn_add,
+            'test': {
+                'add': fn_add,
+            }
+        })
+        data = p.parse_expr('{"a": "a", "b": "1/0", "c": F.add(1, 2), "d": F.test.add(2, 2)}')
+        self.assertDictEqual(data, {'a': 'a', 'b': '1/0', 'c': 3, 'd': 4})
+
     def test_parse_dict_with_names(self):
         names = {'c': 1, 'd': 2}
         p = conff.Parser(names=names, fns={})
@@ -132,8 +141,8 @@ class ConffTestCase(TestCase):
         p = conff.Parser()
         del p._params['etype']
         key = p.generate_crypto_key()
-        self.assertTrue(key is not None)
-        self.assertTrue(p._params['ekey'] is not None)
+        self.assertTrue(key is None)
+        self.assertTrue(p._params['ekey'] is None)
         p._params['etype'] = 'nonsense'
         key = p.generate_crypto_key()
         self.assertTrue(key is None)
@@ -142,7 +151,6 @@ class ConffTestCase(TestCase):
     def test_encryption(self):
         # generate key, save it somewhere safe
         names = {'R': {'_': {'etype': 'fernet'}}}
-        etype = conff.generate_key(names)()
         ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
         names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
         original_value = 'ACCESSSECRETPLAIN1234'

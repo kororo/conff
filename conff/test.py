@@ -87,21 +87,30 @@ class ConffTestCase(TestCase):
         # test foreach exceptions
 
     def test_error_load_yaml(self):
-        fs_path = self.get_test_data_path('test_config_03.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        def test_error_load_yaml_01():
+            fs_path = self.get_test_data_path('test_config_03.yml')
+            conff.load(fs_path=fs_path)
+
+        self.assertRaises(TypeError, test_error_load_yaml_01)
 
     def test_error_foreach(self):
-        fs_path = self.get_test_data_path('malformed_foreach_01.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
-        fs_path = self.get_test_data_path('malformed_foreach_02.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        def test_error_foreach_01():
+            fs_path = self.get_test_data_path('malformed_foreach_01.yml')
+            conff.load(fs_path=fs_path)
+
+        self.assertRaises(ValueError, test_error_foreach_01)
+
+        def test_error_foreach_02():
+            fs_path = self.get_test_data_path('malformed_foreach_02.yml')
+            conff.load(fs_path=fs_path)
+
+        self.assertRaises(ValueError, test_error_foreach_02)
 
     def test_parse(self):
         data = conff.parse('{"a": "a", "b": "1/0"}', names={}, fns={})
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+        data = conff.parse({'a': 'a', 'b': '1 + 2'}, names={}, fns={})
+        self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_encryption(self):
         # generate key, save it somewhere safe
@@ -139,3 +148,11 @@ class ConffTestCase(TestCase):
         data = Test()
         conff.update(data, {'test': 'test'})
         self.assertEqual('test', data.test, 'Value mismatch')
+
+    def test_update_recursive(self):
+        fns = {'F': conff.update({'a': 1}, {
+            'b': {
+                'c': 2
+            }
+        })}
+        self.assertDictEqual(fns, {'F': {'a': 1, 'b': {'c': 2}}})
