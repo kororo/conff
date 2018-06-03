@@ -48,8 +48,9 @@ Important Notes
 ---------------
 
 In Python 3.5, the dict data type has inconsistent ordering, it is **STRONGLY** recommended to use **OrderedDict** if
-you manually parse object. If you load from YAML file, the library already handled it.
-
+you manually parse object. If you load from YAML file, the library already handled it. The reason of order is important,
+this due to simplification and assumption of order execution. The library will parse the values from top to bottom as
+per order in the key-value dictionary.
 
 Install
 -------
