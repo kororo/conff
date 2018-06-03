@@ -28,15 +28,22 @@ class ConffTestCase(TestCase):
 
     def test_simple_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_01.yml')
-        data = conff.load(fs_path=fs_path)
+        p = conff.Parser()
+        data = p.parse_file(fs_path=fs_path)
         data = data if data else {}
         self.assertDictEqual(data, {'test_1': 'test_1', 'test_2': ''})
 
+    def test_ext_up_load_yaml(self):
+        fs_path = self.get_test_data_path('test_config_04.yml')
+        p = conff.Parser()
+        data = p.parse_file(fs_path=fs_path)
+        data = data if data else {}
+
     def test_complex_load_yml(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_02.yml')
-        key = Fernet.generate_key()
-        errs = []
-        data = conff.load(fs_path=fs_path, params={'ekey': key}, errors=errs)
+        key = p.generate_crypto_key()
+        data = p.parse_file(fs_path=fs_path)
         data = data if data else {}
         # test simple types
         self.assertEqual(data.get('test_1'), 'test_1')
@@ -84,24 +91,53 @@ class ConffTestCase(TestCase):
         data_test_17 = {'test0': {'value': 0, 'length': 2},
                         'test1': {'value': 4, 'length': 2}}
         self.assertDictEqual(data.get('test_17'), data_test_17)
-        # test foreach exceptions
+        data_test_18 = {'test_18_1': 3} 
+        self.assertDictEqual(data.get('test_18'), data_test_18)
+
 
     def test_error_load_yaml(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_03.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(TypeError) as context:
+            data = p.parse_file(fs_path=fs_path)
 
     def test_error_foreach(self):
+        p = conff.Parser()
         fs_path = self.get_test_data_path('malformed_foreach_01.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(ValueError) as context:
+            data = p.parse_file(fs_path=fs_path)
         fs_path = self.get_test_data_path('malformed_foreach_02.yml')
-        data = conff.load(fs_path=fs_path)
-        self.assertIsNone(data)
+        with self.assertRaises(ValueError) as context:
+            data = p.parse_file(fs_path=fs_path)
 
     def test_parse(self):
-        data = conff.parse('{"a": "a", "b": "1/0"}', names={}, fns={})
+        p = conff.Parser(names={}, fns={})
+        data = p.parse_expr('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+
+    def test_parse_dict_with_names(self):
+        names = {'c': 1, 'd': 2}
+        p = conff.Parser(names=names, fns={})
+        data = p.parse_dict({"a": "a", "b": "c + d"})
+        self.assertDictEqual(data, {'a': 'a', 'b': 3})
+
+    def test_missing_operators(self):
+        names = {'c': 1, 'd': 2}
+        p = conff.Parser(names=names, fns={}, operators={'not': 'an_operator'})
+        with self.assertRaises(KeyError) as context:
+            data = p.parse_dict({"a": "a", "b": "c + d"})
+        self.assertTrue("<class '_ast.Add'>" in str(context.exception))
+
+    def test_generate_crypto(self):
+        p = conff.Parser()
+        del p._params['etype']
+        key = p.generate_crypto_key()
+        self.assertTrue(key is not None)
+        self.assertTrue(p._params['ekey'] is not None)
+        p._params['etype'] = 'nonsense'
+        key = p.generate_crypto_key()
+        self.assertTrue(key is None)
+        self.assertTrue(p._params['ekey'] is None)
 
     def test_encryption(self):
         # generate key, save it somewhere safe

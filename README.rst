@@ -205,6 +205,50 @@ Parse with extends and updates
    r = conff.parse(data)
    r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
 
+Create a list of Values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This creates a list of floats, similar to numpy.linspace
+
+.. code:: python
+
+   import conff
+   data = {'t2': 'F.linspace(0, 10, 5)'}
+   r = conff.parse(data)
+   r = {'t2': [0.0, 2.5, 5.0, 7.5, 10.0]} 
+
+This also creates a list of floats, but behaves like numpy.arange (although
+slightly different in that it is inclusive of the endpoint).
+
+.. code:: python
+
+   import conff
+   data = {'t2': 'F.arange(0, 10, 2)'}
+   r = conff.parse(data)
+   r = {'t2': [0, 2, 4, 6, 8, 10]}
+
+Parse with for each
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One can mimic the logic of a for loop with the following example
+
+.. code:: python
+
+   import conff
+   data = {'t1': 2,
+           'F.foreach': {
+               'values': 'F.linspace(0, 10, 2)',
+               # You have access to loop.index, loop.value, and loop.length
+               # within the template, as well as all the usual names
+               'template': {
+                    '"test%i"%loop.index': 'R.t1*loop.value',
+                    'length': 'loop.length'
+                    }
+               }
+          }
+   r = conff.parse(data)
+   r = {'length': 3, 't1': 2, 'test0': 0.0, 'test1': 10.0, 'test2': 20.0} 
+
 Encryption
 ----------
 
@@ -436,13 +480,16 @@ TODO
 
   - [X] Add more functions for encryption
   - [ ] Test on multilanguage
-  - [ ] Add better exception handling
   - [ ] Add circular dependencies error
   - [ ] Ensure this is good on production environment
   - [X] Add options to give more flexibility
   - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
   - [ ] Improve F.extend to allow list to be extended
   - [ ] Allow conff to update existing config object
+  - [ ] Have more converter from/to excel, xml
+  - [ ] Feature to display warning and error messages (for example, missing parameters, logging purposes)
+  - [ ] Add options to extend structure in template (for example, https://github.com/defunkt/pystache), the idea is render the values in string, convert it to object and attach it back. This will also inherit lots of feature such as loop, decision blocks
+  - [ ] Separate current functions into built-in and restructure it (first break-changes to organise all the built-in functions into more better way)
 
 - [ ] Improve docs
 
@@ -450,6 +497,7 @@ TODO
   - [ ] Make github layout code into two left -> right
   - [X] Put more examples
   - [ ] Setup readthedocs
+  - [ ] Add code conduct, issue template into git project.
 
 Other Open Source
 -----------------

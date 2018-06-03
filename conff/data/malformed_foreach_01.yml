@@ -1,0 +1,7 @@
+# malformed foreach sections
+test:
+  F.foreach:
+    template:
+      '"test%i"%loop.index': 
+        value: loop.value
+        length: loop.length

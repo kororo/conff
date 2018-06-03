@@ -23,8 +23,8 @@ class Munch2(Munch):
 
 def update_recursive(d, u):
     """
-    Update dictionary recursively. It traverse any object implements "collections.Mapping", anything else,
-    it overwrites the original value.
+    Update dictionary recursively. It traverse any object implements
+    "collections.Mapping", anything else, it overwrites the original value.
     :param d: Original dictionary to be updated
     :param u: Value dictionary
     :return: Updated dictionary after merged
@@ -48,22 +48,25 @@ def update_recursive(d, u):
     return d
 
 
-def yaml_safe_load(stream):
+def yaml_safe_load(stream, ordered=False):
     import yaml
     from yaml.resolver import BaseResolver
 
-    def ordered_load(stream, loader_cls):
-        class OrderedLoader(loader_cls):
-            pass
+    if ordered:
+        def ordered_load(stream, loader_cls):
+            class OrderedLoader(loader_cls):
+                pass
 
-        def construct_mapping(loader, node):
-            loader.flatten_mapping(node)
-            return odict(loader.construct_pairs(node))
+            def construct_mapping(loader, node):
+                loader.flatten_mapping(node)
+                return odict(loader.construct_pairs(node))
 
-        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
-        return yaml.load(stream, OrderedLoader)
+            OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
+            return yaml.load(stream, OrderedLoader)
 
-    return ordered_load(stream, yaml.SafeLoader)
+        return ordered_load(stream, yaml.SafeLoader)
+    else:
+        return yaml.safe_load(stream)
 
 
 def filter_value(value):
@@ -79,6 +82,14 @@ def filter_value(value):
 
 def fn_str(val):
     return str(val)
+
+
+def fn_float(val):
+    return float(val)
+
+
+def fn_int(val):
+    return int(val)
 
 
 def fn_has(val, name):
@@ -104,6 +115,18 @@ def fn_str_trim(val: str, cs: list = None):
     for c in cs:
         val = val.strip(c)
     return val
+
+
+def fn_linspace(start, end, steps):
+    delta = (end-start)/(steps-1)
+    return [start + delta*i for i in range(steps)]
+
+
+def fn_arange(start, end, delta):
+    vals = [start]
+    while vals[-1] + delta <= end:
+        vals.append(vals[-1] + delta)
+    return vals
 
 
 def fn_extend(val, val2):
@@ -177,14 +200,30 @@ def fn_inc_names(names: dict):
         if itype == 'yaml':
             data = load(fs_path=fs_path, fs_root=fs_root, errors=errors)
         return data
-
     return fn_inc
+
+
+def fn_foreach(foreach, parent, names={}, fns={}):
+    template = foreach['template']
+    if not isinstance(template, dict):
+        raise ValueError('template item of F.foreach must be a dict')
+    for i, v in enumerate(foreach['values']):
+        names.update({'loop': {'index': i, 'value': v,
+                               'length': len(foreach['values'])}})
+        result = {}
+        for key, val in template.items():
+            pkey = parse_expr(key, names=names, fns=fns)
+            pval = parse(copy.copy(val), names=names)
+            result[pkey] = pval
+        parent.update(result)
+    # remove this specific foreach loop info from names dict so we don't break
+    # any subsequent foreach loops
+    del names['loop']
 
 
 def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
     errors = errors if type(errors) == list else []
     names2 = Munch2.fromDict({**names, **{
-
     }})
     fns = {'F': update_recursive(fns, {
         'list': {
@@ -192,6 +231,8 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
             'join': fn_list_join
         },
         'str': fn_str,
+        'float': fn_float,
+        'int': fn_int,
         'has': fn_has,
         'next': fn_list_next,
         'join': fn_list_join,
@@ -200,7 +241,9 @@ def parse_expr(expr: str, names: dict, fns: dict, errors: list = None):
         'update': fn_update,
         'encrypt': fn_encrypt_names(names2),
         'decrypt': fn_decrypt_names(names2),
-        'inc': fn_inc_names(names2)
+        'inc': fn_inc_names(names2),
+        'linspace': fn_linspace,
+        'arange': fn_arange
     })}
     s = EvalWithCompoundTypes(names=names2, functions=fns)
     try:
@@ -228,6 +271,12 @@ def parse(root, names: dict = None, fns: dict = None, errors: list = None):
         if 'F.update' in root_keys:
             fn_update(root['F.update'], root)
             del root['F.update']
+        if 'F.foreach' in root_keys:
+            for k in ('values', 'template'):
+                if k not in root['F.foreach']:
+                    raise ValueError('F.foreach missing key: {}'.format(k))
+            fn_foreach(root['F.foreach'], root, names=names, fns=fns)
+            del root['F.foreach']
     elif root_type == list:
         for i, v in enumerate(root):
             root[i] = parse(root=v, names=names, fns=fns, errors=errors)
@@ -252,7 +301,7 @@ def load(fs_path: str, fs_root: str = '', errors: list = None, params: dict = No
     try:
         with open(fs_file_path) as stream:
             # load_yaml initial structure
-            data = yaml_safe_load(stream)
+            data = yaml_safe_load(stream, ordered=True)
             data['_'] = data['_'] if data.get('_') else {}
             data_internal = {'fs_path': fs_path, 'fs_root': fs_root}
             data_internal = {**{'etype': 'fernet'}, **data_internal, **params}
