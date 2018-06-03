@@ -2,7 +2,7 @@ from conff import ee
 from conff import parser
 
 
-__all__ = ['parse', 'load']
+__all__ = ['parse', 'load', 'encrypt', 'decrypt', 'generate_key', 'update', 'Parser']
 
 parse = ee.parse
 load = ee.load
