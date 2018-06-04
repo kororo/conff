@@ -8,6 +8,7 @@ import yaml
 from cryptography.fernet import Fernet
 
 import conff
+from conff import utils
 
 
 class ConffTestCase(TestCase):
@@ -107,9 +108,9 @@ class ConffTestCase(TestCase):
         self.assertRaises(ValueError, test_error_foreach_02)
 
     def test_parse(self):
-        data = conff.parse('{"a": "a", "b": "1/0"}', names={}, fns={})
+        data = conff.parse('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
-        data = conff.parse({'a': 'a', 'b': '1 + 2'}, names={}, fns={})
+        data = conff.parse(utils.odict([('a', 'a'), ('b', '1 + 2')]))
         self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_encryption(self):

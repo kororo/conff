@@ -47,6 +47,15 @@ This project inspired of the necessity complex config in a project. By means com
 Important Notes
 ---------------
 
+Parsing Order
+^^^^^^^^^^^^^
+
+conff will only parse and resolve variable/names top to bottom order. Please ensure you arrange your configuration
+in the same manner, there is no auto-dependencies resolver to handle complex and advanced names currently.
+
+dict vs collections.OrderedDict
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 In Python 3.5, the dict data type has inconsistent ordering, it is **STRONGLY** recommended to use **OrderedDict** if
 you manually parse object. If you load from YAML file, the library already handled it. The reason of order is important,
 this due to simplification and assumption of order execution. The library will parse the values from top to bottom as
@@ -66,32 +75,19 @@ To get very basic parsing:
 
 .. code:: python
 
-   import conff
-   r = conff.parse({'math': '1 + 3'})
-   r = {'math': '4'}
+    import conff
+    p = conff.Parser()
+    r = p.parse_dict({'math': '1 + 3'})
+    r == {'math': 4}
 
 load YAML file
 ^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   r = conff.load('path_of_file.yaml')
-
-import files
-^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   ## y1.yml
-   # shared_conf: 1
-   ## y2.yml
-   # conf: F.inc('y1.yml')
-
-   r = conff.load('y2.yml')
-   r = {'conf': {'shared_conf': 1}}
-
+    import conff
+    p = conff.Parser()
+    r = p.parse_file('path_of_file.yaml')
 
 Examples
 --------
@@ -135,6 +131,21 @@ Parse error behaviours
    r = conff.parse({"math": "1 / 0"}, errors=errors)
    r = {'math': '1 / 0'}
    errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
+
+
+import files
+^^^^^^^^^^^^
+
+.. code:: python
+
+   import conff
+   ## y1.yml
+   # shared_conf: 1
+   ## y2.yml
+   # conf: F.inc('y1.yml')
+
+   r = conff.load('y2.yml')
+   r = {'conf': {'shared_conf': 1}}
 
 Parse with functions
 ^^^^^^^^^^^^^^^^^^^^
@@ -211,7 +222,7 @@ Parse with extends and updates
    r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
 
 Create a list of Values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 This creates a list of floats, similar to numpy.linspace
 
@@ -233,7 +244,7 @@ slightly different in that it is inclusive of the endpoint).
    r = {'t2': [0, 2, 4, 6, 8, 10]}
 
 Parse with for each
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 One can mimic the logic of a for loop with the following example
 
@@ -501,6 +512,7 @@ Other Open Source
 This project uses other awesome projects:
 
 - `cryptography <https://github.com/pyca/cryptography>`_
+- `jinja2 <http://jinja.pocoo.org/docs/2.10/>`_
 - `munch <https://github.com/Infinidat/munch>`_
 - `simpleeval <https://github.com/danthedeckie/simpleeval>`_
 - `yaml <https://github.com/yaml/pyyaml>`_

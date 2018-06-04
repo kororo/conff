@@ -1,50 +1,95 @@
+import logging
 import os
 import collections
 import copy
 import simpleeval
+import warnings
 from simpleeval import EvalWithCompoundTypes
 from cryptography.fernet import Fernet
-
+from conff import utils
 from conff.utils import Munch2, update_recursive, yaml_safe_load, filter_value, odict
 
 
 class Parser:
-    opts = {
-        'max_power': simpleeval.MAX_POWER,
-        'max_string_length': simpleeval.MAX_STRING_LENGTH,
-        'disallow_prefixes': simpleeval.DISALLOW_PREFIXES
+    # default params
+    default_params = {
+        'etype': 'fernet',
+        # list of simpleeval library parameters
+        'simpleeval': {
+            # by default operators = simpleeval.DEFAULT_OPERATORS,
+            'operators': {},
+            'options': {
+                'max_power': simpleeval.MAX_POWER,
+                'max_string_length': simpleeval.MAX_STRING_LENGTH,
+                'disallow_prefixes': simpleeval.DISALLOW_PREFIXES
+            }
+        }
     }
 
-    def __init__(self, params=None, names=None, fns=None, operators=None,
-                 opts=None):
+    def __init__(self, names=None, fns=None, params=None):
         """
         :param params: A dictionary containing some parameters that will modify
         how the builtin functions run. For example, the type of encryption to
-        use and the encrpyption key to use
+        use and the encrpyption key to use or simpleeval library parameters
         """
-
-        self._params = params if params is not None else {}
-        self._params.update({'etype': self._params.get('etype', 'fernet')})
-        self._operators = operators if operators is not None else simpleeval.DEFAULT_OPERATORS
-        opts = opts if opts is not None else {}
-        self.opts.update(opts)
-        self._names = Munch2(names) if names is not None else {}
-        fns = fns if fns is not None else {}
-        self._fns = {'F': update_recursive(fns, {fn[3:]: getattr(self, fn)
-                                                 for fn in dir(self) if
-                                                 'fn_' in fn})}
-        # Update simpleeval safety options
-        for k, v in opts.items():
-            setattr(simpleeval, k.upper(), v)
-        self._eval = EvalWithCompoundTypes()
-        # self._evals_functions should mirror self._fns
-        # TODO: Make a test to ensure proper mirroring
-        self._eval.functions = self._fns
-        self._eval.names = self._names
-        if operators:
-            self._operators = operators
-            self._eval.operators = self._operators
         self.errors = []
+        self.logger = self.prepare_logger()
+        self.params = self.prepare_params(params=params)
+        self.fns = self.prepare_functions(fns=fns)
+        self.names = self.prepare_names(names=names)
+        self._evaluator = self.prepare_evaluator()
+
+    def prepare_logger(self):
+        logger = logging.getLogger('conff')
+        return logger
+
+    def prepare_params(self, params: dict = None):
+        """
+        Setup parameters for the library
+
+        :param params: A dictionary containing some parameters that will modify
+        how the builtin functions run. For example, the type of encryption to
+        use and the encrpyption key to use or simpleeval library parameters
+
+        :return: Prepared parameters
+        """
+        # ensure not to update mutable params
+        params = copy.deepcopy(params or {})
+        # inject with default params with exception for simpleeval.operators
+        params = utils.update_recursive(params, self.default_params)
+        return params
+
+    def prepare_functions(self, fns: dict = None):
+        fns = fns or {}
+        cls_fns = {fn[3:]: getattr(self, fn) for fn in dir(self) if 'fn_' in fn}
+        result = {'F': update_recursive(fns, cls_fns)}
+        return result
+
+    def prepare_names(self, names: dict = None):
+        names = names or {}
+        names = names if isinstance(names, Munch2) else Munch2(names)
+        return names
+
+    def prepare_evaluator(self):
+        """
+        Setup evaluator engine
+
+        :return: Prepare evaluator engine
+        """
+        simpleeval_params = self.params.get('simpleeval', {})
+        # update simpleeval safety options
+        for k, v in simpleeval_params.get('options', {}).items():
+            setattr(simpleeval, k.upper(), v)
+        evaluator = EvalWithCompoundTypes()
+        # self._evals_functions should mirror self.fns
+        # TODO: Make a test to ensure proper mirroring
+        evaluator.functions = self.fns
+        evaluator.names = self.names
+        # set the operators
+        if simpleeval_params.get('operators'):
+            evaluator.operators = simpleeval_params.get('operators')
+
+        return evaluator
 
     def parse_file(self, fs_path: str, fs_root: str = '',
                    include_dirs: list = [], syntax='yaml'):
@@ -66,25 +111,26 @@ class Parser:
         """
         fs_file_path = os.path.join(fs_root, fs_path)
         fs_root = fs_root if fs_root is None else os.path.dirname(fs_file_path)
-        self._params.update({'fs_path': fs_path, 'fs_root': fs_root})
+        self.params.update({'fs_path': fs_path, 'fs_root': fs_root})
         with open(fs_file_path) as stream:
             # load_yaml initial structure
             data = yaml_safe_load(stream)
             names = {'R': data}
-            self._names.update(names)
+            self.names.update(names)
             data = self._parse(data)
         # Delete anything specific to this file so we can reuse the parser
         for k in ('fs_path', 'fs_root', 'R'):
-            if k in self._params:
-                del self._params[k]
+            if k in self.params:
+                del self.params[k]
         return data
 
-    def parse_dict(self, in_data):
+    def parse_dict(self, in_data: dict):
         """
         Parse a dictionary containing conff syntax
         """
-        names = {'R': in_data}
-        self._names.update(names)
+        if type(in_data) == dict:
+            warnings.warn('argument type is in dict, please use collections.OrderedDict for guaranteed order.')
+        self.names.update(in_data)
         data = self._parse(in_data)
         return data
 
@@ -93,20 +139,23 @@ class Parser:
         Parse a string
         """
         try:
-            v = self._eval.eval(expr=expr)
+            v = self._evaluator.eval(expr=expr)
         except SyntaxError as ex:
             v = expr
+            # TODO: feature T2
             # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
             self.errors.append([expr, ex])
         except simpleeval.InvalidExpression as ex:
             v = expr
+            # TODO: feature T2
             # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
             # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
             # print("Message: {}".format(ex))
             self.errors.append(ex)
         except Exception as ex:
             # TODO: feature T2
-            print('Exception on expression: {}'.format(expr))
+            # print('Exception on expression: {}'.format(expr))
+            self.errors.append(ex)
             raise
         # TODO: feature T4: include this part of the classes so user could override
         v = filter_value(v)
@@ -161,15 +210,15 @@ class Parser:
     def generate_crypto_key(self):
         """
         Generate a cryptographic key for encrypting data. Stores the key in
-        self._params['ekey'] so it is accessible to encrypt parsing functions.
+        self.params['ekey'] so it is accessible to encrypt parsing functions.
         Also returns the key
         """
-        etype = self._params.get('etype')
+        etype = self.params.get('etype')
         if etype == 'fernet':
             key = Fernet.generate_key()
         else:
             key = None
-        self._params['ekey'] = key
+        self.params['ekey'] = key
         return key
 
     def fn_str(self, val):
@@ -236,8 +285,8 @@ class Parser:
         walk(update, parent)
 
     def fn_encrypt(self, data):
-        etype = self._params.get('etype', None)
-        ekey = self._params.get('ekey', None)
+        etype = self.params.get('etype', None)
+        ekey = self.params.get('ekey', None)
         token = None
         if etype == 'fernet':
             f = Fernet(ekey)
@@ -245,8 +294,8 @@ class Parser:
         return token
 
     def fn_decrypt(self, data):
-        etype = self._params.get('etype', None)
-        ekey = self._params.get('ekey', None)
+        etype = self.params.get('etype', None)
+        ekey = self.params.get('ekey', None)
         message = None
         if etype == 'fernet':
             f = Fernet(ekey)
@@ -254,9 +303,9 @@ class Parser:
         return message
 
     def fn_inc(self, fs_path, syntax: str = 'yaml', fs_root: str = None):
-        fs_root = fs_root if fs_root else self._params['fs_root']
+        fs_root = fs_root if fs_root else self.params['fs_root']
         # Make sure to pass on any modified options to the sub parser
-        sub_parser = Parser(opts=self.opts)
+        sub_parser = Parser(params=self.params)
         data = sub_parser.parse_file(fs_path=fs_path, fs_root=fs_root,
                                      syntax=syntax)
         return data
@@ -266,8 +315,8 @@ class Parser:
         if not isinstance(template, dict):
             raise ValueError('template item of F.foreach must be a dict')
         for i, v in enumerate(foreach['values']):
-            self._names.update({'loop': {'index': i, 'value': v,
-                                         'length': len(foreach['values'])}})
+            self.names.update({'loop': {'index': i, 'value': v,
+                                        'length': len(foreach['values'])}})
             result = {}
             for key, val in template.items():
                 pkey = self.parse_expr(key)
@@ -276,4 +325,4 @@ class Parser:
             parent.update(result)
         # remove this specific foreach loop info from names dict so we don't
         # break any subsequent foreach loops
-        del self._names['loop']
+        del self.names['loop']

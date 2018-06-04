@@ -5,6 +5,7 @@ from distutils.dir_util import copy_tree
 from unittest import TestCase
 import yaml
 import conff
+from conff import utils
 
 
 class ConffTestCase(TestCase):
@@ -107,7 +108,7 @@ class ConffTestCase(TestCase):
             data = p.parse_file(fs_path=fs_path)
 
     def test_parse(self):
-        p = conff.Parser(names={}, fns={})
+        p = conff.Parser()
         data = p.parse_expr('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
 
@@ -127,26 +128,26 @@ class ConffTestCase(TestCase):
     def test_parse_dict_with_names(self):
         names = {'c': 1, 'd': 2}
         p = conff.Parser(names=names, fns={})
-        data = p.parse_dict({"a": "a", "b": "c + d"})
+        data = p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_missing_operators(self):
         names = {'c': 1, 'd': 2}
-        p = conff.Parser(names=names, fns={}, operators={'not': 'an_operator'})
+        p = conff.Parser(names=names, fns={}, params={'simpleeval': {'operators': {'not': 'an_operator'}}})
         with self.assertRaises(KeyError) as context:
-            data = p.parse_dict({"a": "a", "b": "c + d"})
+            p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertTrue("<class '_ast.Add'>" in str(context.exception))
 
     def test_generate_crypto(self):
         p = conff.Parser()
-        del p._params['etype']
+        del p.params['etype']
         key = p.generate_crypto_key()
         self.assertTrue(key is None)
-        self.assertTrue(p._params['ekey'] is None)
-        p._params['etype'] = 'nonsense'
+        self.assertTrue(p.params['ekey'] is None)
+        p.params['etype'] = 'nonsense'
         key = p.generate_crypto_key()
         self.assertTrue(key is None)
-        self.assertTrue(p._params['ekey'] is None)
+        self.assertTrue(p.params['ekey'] is None)
 
     def test_encryption(self):
         # generate key, save it somewhere safe
@@ -183,3 +184,9 @@ class ConffTestCase(TestCase):
         data = Test()
         conff.update(data, {'test': 'test'})
         self.assertEqual('test', data.test, 'Value mismatch')
+
+    def test_warning(self):
+        p = conff.Parser()
+        with self.assertWarns(Warning):
+            data = p.parse_dict({'a': 'a', 'b': '1 + 2'})
+            self.assertDictEqual(data, {'a': 'a', 'b': 3})

@@ -11,9 +11,9 @@ def parse(root, names: dict = None, fns: dict = None, errors: list = None):
     return result
 
 
-def load(fs_path: str, fs_root: str = '', params: dict = None, opts: dict = None, errors: list = None):
+def load(fs_path: str, fs_root: str = '', params: dict = None, errors: list = None):
     from conff import Parser
-    parser = Parser(params=params, opts=opts)
+    parser = Parser(params=params)
     result = parser.parse_file(fs_path=fs_path, fs_root=fs_root)
     return result
 
