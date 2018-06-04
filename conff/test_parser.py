@@ -36,6 +36,12 @@ class ConffTestCase(TestCase):
         p = conff.Parser()
         data = p.parse_file(fs_path=fs_path)
         data = data if data else {}
+        self.assertDictEqual(data, {
+            "test_13": {"test_13_1": 1, "test_13_2": 2, "test_13_3": 3, "test_13_5": {"test_13_5_1": 1},
+                        "test_13_6": {"test_13_6_1": 1}},
+            "test_14": {"test_13_1": 11, "test_13_2": 2, "test_13_3": 3, "test_13_5": 5,
+                        "test_13_6": {"test_13_6_1": 1, "test_13_6_2": {"test_13_6_2_1": 1, "test_13_6_2_2": 2}},
+                        "test_13_4": 4}})
 
     def test_complex_load_yml(self):
         p = conff.Parser()
@@ -101,39 +107,37 @@ class ConffTestCase(TestCase):
     def test_error_foreach(self):
         p = conff.Parser()
         fs_path = self.get_test_data_path('malformed_foreach_01.yml')
-        with self.assertRaises(ValueError) as context:
-            data = p.parse_file(fs_path=fs_path)
+        with self.assertRaises(ValueError):
+            p.parse_file(fs_path=fs_path)
         fs_path = self.get_test_data_path('malformed_foreach_02.yml')
-        with self.assertRaises(ValueError) as context:
-            data = p.parse_file(fs_path=fs_path)
+        with self.assertRaises(ValueError):
+            p.parse_file(fs_path=fs_path)
 
     def test_parse(self):
         p = conff.Parser()
         data = p.parse_expr('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+        data = p.parse_dict(utils.odict([('a', 'a'), ('b', '1 + 2')]))
+        self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_parse_with_fns(self):
         def fn_add(a, b):
             return a + b
 
-        p = conff.Parser(names={}, fns={
-            'add': fn_add,
-            'test': {
-                'add': fn_add,
-            }
-        })
+        fns = {'add': fn_add, 'test': {'add': fn_add}}
+        p = conff.Parser(fns=fns)
         data = p.parse_expr('{"a": "a", "b": "1/0", "c": F.add(1, 2), "d": F.test.add(2, 2)}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0', 'c': 3, 'd': 4})
 
     def test_parse_dict_with_names(self):
         names = {'c': 1, 'd': 2}
-        p = conff.Parser(names=names, fns={})
+        p = conff.Parser(names=names)
         data = p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_missing_operators(self):
         names = {'c': 1, 'd': 2}
-        p = conff.Parser(names=names, fns={}, params={'simpleeval': {'operators': {'not': 'an_operator'}}})
+        p = conff.Parser(names=names, params={'simpleeval': {'operators': {'not': 'an_operator'}}})
         with self.assertRaises(KeyError) as context:
             p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertTrue("<class '_ast.Add'>" in str(context.exception))
@@ -190,3 +194,29 @@ class ConffTestCase(TestCase):
         with self.assertWarns(Warning):
             data = p.parse_dict({'a': 'a', 'b': '1 + 2'})
             self.assertDictEqual(data, {'a': 'a', 'b': 3})
+
+    def test_update_recursive(self):
+        fns = {'F': conff.update({'a': 1}, {
+            'b': {
+                'c': 2
+            }
+        })}
+        self.assertDictEqual(fns, {'F': {'a': 1, 'b': {'c': 2}}})
+
+    def test_parse_old(self):
+        data = conff.parse('{"a": "a", "b": "1/0"}')
+        self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
+        data = conff.parse(utils.odict([('a', 'a'), ('b', '1 + 2')]))
+        self.assertDictEqual(data, {'a': 'a', 'b': 3})
+
+    def test_encryption_old(self):
+        # generate key, save it somewhere safe
+        names = {'R': {'_': {'etype': 'fernet'}}}
+        etype = conff.generate_key(names)()
+        ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+        names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
+        original_value = 'ACCESSSECRETPLAIN1234'
+        encrypted_value = conff.encrypt(names)(original_value)
+        # decrypt data
+        value = conff.decrypt(names)(encrypted_value)
+        self.assertEqual(original_value, value, 'Value mismatch')
