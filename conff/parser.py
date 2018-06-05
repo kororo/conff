@@ -1,9 +1,13 @@
+import json
 import logging
 import os
 import collections
 import copy
+import sys
+
 import simpleeval
 import warnings
+from jinja2 import Template
 from simpleeval import EvalWithCompoundTypes
 from cryptography.fernet import Fernet
 from conff import utils
@@ -91,8 +95,7 @@ class Parser:
 
         return evaluator
 
-    def parse_file(self, fs_path: str, fs_root: str = '',
-                   include_dirs: list = [], syntax='yaml'):
+    def load(self, fs_path: str, fs_root: str = '', fs_include: list = None):
         """
         Parse configuration file on disk.
 
@@ -102,41 +105,53 @@ class Parser:
         :param fs_root: Root directory to use when parsing. Defaults to the
         directory of the input file.
         :type fs_root: str
-        :param include_dirs: A list of additional directories in which to
+        :param fs_include: A list of additional directories in which to
         search for included files. Always contains the directory of the input
         file, and will also contain fs_root if specified.
-        :type include_dirs: list
-        :param syntax: The syntax of the file on disk. Defaults to YAML
-        :type syntax: str
+        :type fs_include: list
         """
         fs_file_path = os.path.join(fs_root, fs_path)
+        _, fs_file_ext = os.path.splitext(fs_file_path)
         fs_root = fs_root if fs_root is None else os.path.dirname(fs_file_path)
         self.params.update({'fs_path': fs_path, 'fs_root': fs_root})
         with open(fs_file_path) as stream:
-            # load_yaml initial structure
-            data = yaml_safe_load(stream)
-            names = {'R': data}
-            self.names.update(names)
-            data = self._parse(data)
+            if 'yml' in fs_file_ext:
+                # load_yaml initial structure
+                data = yaml_safe_load(stream)
+                names = {'R': data}
+                self.names.update(names)
+                data = self._process(data)
+            elif 'json' in fs_file_ext:
+                data = json.loads(stream.read())
+                names = {'R': data}
+                self.names.update(names)
+                data = self._process(data)
+            else:
+                data = '\n'.join(stream.readlines())
         # Delete anything specific to this file so we can reuse the parser
         for k in ('fs_path', 'fs_root', 'R'):
             if k in self.params:
                 del self.params[k]
         return data
 
-    def parse_dict(self, in_data: dict):
+    def parse(self, data):
         """
-        Parse a dictionary containing conff syntax
+        Main entry point to parse arbitary data type
+        :param data: Input can be any data type such as dict, list, string, int
+        :return: Parsed data
         """
-        if type(in_data) == dict:
-            warnings.warn('argument type is in dict, please use collections.OrderedDict for guaranteed order.')
-        self.names.update(in_data)
-        data = self._parse(in_data)
-        return data
+        if isinstance(data, dict):
+            if type(data) == dict:
+                warnings.warn('argument type is in dict, please use collections.OrderedDict for guaranteed order.')
+            self.names.update(data)
+            result = self._process(data)
+        else:
+            result = self.parse_expr(data)
+        return result
 
     def parse_expr(self, expr: str):
         """
-        Parse a string
+        Parse an expression in string
         """
         try:
             v = self._evaluator.eval(expr=expr)
@@ -153,6 +168,7 @@ class Parser:
             # print("Message: {}".format(ex))
             self.errors.append(ex)
         except Exception as ex:
+            v = expr
             # TODO: feature T2
             # print('Exception on expression: {}'.format(expr))
             self.errors.append(ex)
@@ -161,7 +177,7 @@ class Parser:
         v = filter_value(v)
         return v
 
-    def _parse(self, root):
+    def _process(self, root):
         """
         The main parsing function
         """
@@ -169,11 +185,15 @@ class Parser:
         if root_type == dict or root_type == odict:
             root_keys = list(root.keys())
             for k, v in root.items():
-                root[k] = self._parse(v)
+                root[k] = self._process(v)
             if 'F.extend' in root_keys:
                 root = self.fn_extend(root['F.extend'], root)
                 if isinstance(root, dict):
                     del root['F.extend']
+            if 'F.template' in root_keys:
+                root = self.fn_template(root['F.template'], root)
+                if isinstance(root, dict):
+                    del root['F.template']
             if 'F.update' in root_keys:
                 self.fn_update(root['F.update'], root)
                 del root['F.update']
@@ -185,7 +205,7 @@ class Parser:
                 del root['F.foreach']
         elif root_type == list:
             for i, v in enumerate(root):
-                root[i] = self._parse(root=v)
+                root[i] = self._process(root=v)
         elif root_type == str:
             value = root
             if type(value) == str:
@@ -302,12 +322,11 @@ class Parser:
             message = f.decrypt(token=str(data).encode()).decode()
         return message
 
-    def fn_inc(self, fs_path, syntax: str = 'yaml', fs_root: str = None):
+    def fn_inc(self, fs_path, fs_root: str = None):
         fs_root = fs_root if fs_root else self.params['fs_root']
         # Make sure to pass on any modified options to the sub parser
         sub_parser = Parser(params=self.params)
-        data = sub_parser.parse_file(fs_path=fs_path, fs_root=fs_root,
-                                     syntax=syntax)
+        data = sub_parser.load(fs_path=fs_path, fs_root=fs_root)
         return data
 
     def fn_foreach(self, foreach, parent):
@@ -320,9 +339,24 @@ class Parser:
             result = {}
             for key, val in template.items():
                 pkey = self.parse_expr(key)
-                pval = self._parse(copy.copy(val))
+                pval = self._process(copy.copy(val))
                 result[pkey] = pval
             parent.update(result)
         # remove this specific foreach loop info from names dict so we don't
         # break any subsequent foreach loops
         del self.names['loop']
+
+    def fn_template(self, template: str, root=None):
+        engine = Template(template)
+        obj_str = engine.render(**self.names)
+        result = obj_str
+
+        # TODO: feature T2
+        obj = utils.yaml_safe_load(obj_str)
+        if root and isinstance(obj, dict):
+            result = self.fn_extend(root, obj)
+        return result
+
+
+class ParserPlugin(object):
+    pass

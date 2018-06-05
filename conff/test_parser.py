@@ -27,14 +27,14 @@ class ConffTestCase(TestCase):
     def test_simple_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_01.yml')
         p = conff.Parser()
-        data = p.parse_file(fs_path=fs_path)
+        data = p.load(fs_path=fs_path)
         data = data if data else {}
         self.assertDictEqual(data, {'test_1': 'test_1', 'test_2': ''})
 
     def test_ext_up_load_yaml(self):
         fs_path = self.get_test_data_path('test_config_04.yml')
         p = conff.Parser()
-        data = p.parse_file(fs_path=fs_path)
+        data = p.load(fs_path=fs_path)
         data = data if data else {}
         self.assertDictEqual(data, {
             "test_13": {"test_13_1": 1, "test_13_2": 2, "test_13_3": 3, "test_13_5": {"test_13_5_1": 1},
@@ -43,11 +43,18 @@ class ConffTestCase(TestCase):
                         "test_13_6": {"test_13_6_1": 1, "test_13_6_2": {"test_13_6_2_1": 1, "test_13_6_2_2": 2}},
                         "test_13_4": 4}})
 
+    def test_load_json(self):
+        fs_path = self.get_test_data_path('test_config_01.json')
+        p = conff.Parser()
+        data = p.load(fs_path=fs_path)
+        data = data if data else {}
+        self.assertDictEqual(data, {'test_1': 1, 'test_2': 2})
+
     def test_complex_load_yml(self):
         p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_02.yml')
-        key = p.generate_crypto_key()
-        data = p.parse_file(fs_path=fs_path)
+        p.generate_crypto_key()
+        data = p.load(fs_path=fs_path)
         data = data if data else {}
         # test simple types
         self.assertEqual(data.get('test_1'), 'test_1')
@@ -102,22 +109,22 @@ class ConffTestCase(TestCase):
         p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_03.yml')
         with self.assertRaises(TypeError) as context:
-            data = p.parse_file(fs_path=fs_path)
+            data = p.load(fs_path=fs_path)
 
     def test_error_foreach(self):
         p = conff.Parser()
         fs_path = self.get_test_data_path('malformed_foreach_01.yml')
         with self.assertRaises(ValueError):
-            p.parse_file(fs_path=fs_path)
+            p.load(fs_path=fs_path)
         fs_path = self.get_test_data_path('malformed_foreach_02.yml')
         with self.assertRaises(ValueError):
-            p.parse_file(fs_path=fs_path)
+            p.load(fs_path=fs_path)
 
     def test_parse(self):
         p = conff.Parser()
-        data = p.parse_expr('{"a": "a", "b": "1/0"}')
+        data = p.parse('{"a": "a", "b": "1/0"}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0'})
-        data = p.parse_dict(utils.odict([('a', 'a'), ('b', '1 + 2')]))
+        data = p.parse(utils.odict([('a', 'a'), ('b', '1 + 2')]))
         self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_parse_with_fns(self):
@@ -126,20 +133,20 @@ class ConffTestCase(TestCase):
 
         fns = {'add': fn_add, 'test': {'add': fn_add}}
         p = conff.Parser(fns=fns)
-        data = p.parse_expr('{"a": "a", "b": "1/0", "c": F.add(1, 2), "d": F.test.add(2, 2)}')
+        data = p.parse('{"a": "a", "b": "1/0", "c": F.add(1, 2), "d": F.test.add(2, 2)}')
         self.assertDictEqual(data, {'a': 'a', 'b': '1/0', 'c': 3, 'd': 4})
 
     def test_parse_dict_with_names(self):
         names = {'c': 1, 'd': 2}
         p = conff.Parser(names=names)
-        data = p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
+        data = p.parse(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_missing_operators(self):
         names = {'c': 1, 'd': 2}
         p = conff.Parser(names=names, params={'simpleeval': {'operators': {'not': 'an_operator'}}})
         with self.assertRaises(KeyError) as context:
-            p.parse_dict(utils.odict([('a', 'a'), ('b', 'c + d')]))
+            p.parse(utils.odict([('a', 'a'), ('b', 'c + d')]))
         self.assertTrue("<class '_ast.Add'>" in str(context.exception))
 
     def test_generate_crypto(self):
@@ -192,15 +199,11 @@ class ConffTestCase(TestCase):
     def test_warning(self):
         p = conff.Parser()
         with self.assertWarns(Warning):
-            data = p.parse_dict({'a': 'a', 'b': '1 + 2'})
+            data = p.parse({'a': 'a', 'b': '1 + 2'})
             self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_update_recursive(self):
-        fns = {'F': conff.update({'a': 1}, {
-            'b': {
-                'c': 2
-            }
-        })}
+        fns = {'F': conff.update({'a': 1}, {'b': {'c': 2}})}
         self.assertDictEqual(fns, {'F': {'a': 1, 'b': {'c': 2}}})
 
     def test_parse_old(self):
@@ -220,3 +223,21 @@ class ConffTestCase(TestCase):
         # decrypt data
         value = conff.decrypt(names)(encrypted_value)
         self.assertEqual(original_value, value, 'Value mismatch')
+
+    def test_fn_template(self):
+        p = conff.Parser(names={'test': 1})
+        fs_path = self.get_test_data_path('test_config_05.yml')
+        data = p.load(fs_path)
+        data = data if data else {}
+        # test: simple value
+        self.assertEqual(data.get('test_1'), 1)
+        # test: template as string, it is seamless names from input (test) and template (test_1)
+        self.assertEqual(data.get('test_2'), '2')
+        # test: template as file (borrowing F.inc capabilities), if test_tpl_01.tpl is {{1 + 2}}
+        self.assertEqual(data.get('test_3'), '3')
+        # test: this where attaching more complex object
+        data_test_4 = {
+            "test_4_0": [3, 4], "test_4_1": 1, "test_4_2": 2, "test_4_3": 3, "test_4_4": 4, "test_4_5": 5,
+            "test_4_6": 6
+        }
+        self.assertDictEqual(data.get('test_4'), data_test_4)
