@@ -1,0 +1,32 @@
+# test: simple value
+test_1: 1
+# test: template as string, it is seamless names from input (test) and template (test_1)
+test_2:
+  F.template: "'{{ R.test_1 + test }}'"
+# test: template as file (borrowing F.inc capabilities), if test_tpl_01.tpl is {{1 + 2}}
+test_3:
+  F.template: F.inc('test_tpl_01.tpl')
+# test: this where attaching more complex object
+test_4:
+  test_4_0: [3, 4]
+  F.template: |
+    test_4_1: {{ R.test_1 }}
+    test_4_2: {{ 1 + 1 }}
+    {% for i in R.test_4.test_4_0 %}
+    test_4_{{ i }}: {{ i }}
+    {% endfor %}
+    # data type is very important here
+    test_4_5: {{ R.test_2 | int + R.test_3 | int }}
+    {% if R.test_1 == 1 %}
+    test_4_6: 6
+    {% else %}
+    test_4_6: 'error'
+    {% endif %}
+  # test behaviour of replace
+  test_4_1: 'error'
+# TODO: test this
+# test_5:
+#   F.template: "{{ }}"
+# TODO: test this
+# test_6:
+#   F.template: "{{ "

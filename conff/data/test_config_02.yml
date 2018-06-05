@@ -85,3 +85,6 @@ test_17:
       '"test%i"%loop.index': 
         value: loop.value
         length: loop.length
+# test 18: test float and int functions
+test_18:
+  test_18_1: 'F.int(F.float(3.5))'

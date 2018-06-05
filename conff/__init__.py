@@ -1,11 +1,13 @@
 from conff import ee
+from conff import parser
 
 
-__all__ = ['parse', 'load']
+__all__ = ['parse', 'load', 'encrypt', 'decrypt', 'generate_key', 'update', 'Parser']
 
 parse = ee.parse
 load = ee.load
-encrypt = ee.fn_encrypt_names
-decrypt = ee.fn_decrypt_names
-generate_key = ee.fn_crypt_generate_key_names
-update = ee.update_recursive
+encrypt = ee.encrypt
+decrypt = ee.decrypt
+generate_key = ee.generate_key
+update = parser.update_recursive
+Parser = parser.Parser

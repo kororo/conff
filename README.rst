@@ -16,6 +16,10 @@ Simple config parser with evaluator library.
     :target: https://codeclimate.com/github/kororo/conff/maintainability
     :alt: Maintainability
 
+.. image:: https://badges.gitter.im/kororo-conff.png
+    :target: https://gitter.im/kororo-conff
+    :alt: Gitter
+
 
 Why Another Config Parser Module?
 ---------------------------------
@@ -34,18 +38,34 @@ This project inspired of the necessity complex config in a project. By means com
 - Flexible
 
   - Make logical expression to derive values
+  - Combine with `jinja2 <http://jinja.pocoo.org/docs/2.10/>`_ template based
 
 - Powerful
 
   - Add custom functions in Python
   - Link name data from Python
 
+Feedback and Discussion
+-----------------------
+
+Come to Gitter channel to discuss, pass any feedbacks and suggestions. If you like to be contributor, please do let me know.
+
 Important Notes
 ---------------
 
-In Python 3.5, the dict data type has inconsistent ordering, it is **STRONGLY** recommended to use **OrderedDict** if
-you manually parse object. If you load from YAML file, the library already handled it.
+Parsing Order
+^^^^^^^^^^^^^
 
+conff will only parse and resolve variable/names top to bottom order. Please ensure you arrange your configuration
+in the same manner, there is no auto-dependencies resolver to handle complex and advanced names currently.
+
+dict vs collections.OrderedDict
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In Python 3.5, the dict data type has inconsistent ordering, it is **STRONGLY** recommended to use **OrderedDict** if
+you manually parse object. If you load from YAML file, the library already handled it. The reason of order is important,
+this due to simplification and assumption of order execution. The library will parse the values from top to bottom as
+per order in the key-value dictionary.
 
 Install
 -------
@@ -59,33 +79,36 @@ Basic Usage
 
 To get very basic parsing:
 
-.. code:: python
-
-   import conff
-   r = conff.parse({'math': '1 + 3'})
-   r = {'math': '4'}
-
-load YAML file
-^^^^^^^^^^^^^^
-
-.. code:: python
-
-   import conff
-   r = conff.load('path_of_file.yaml')
-
-import files
+Simple parse
 ^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   ## y1.yml
-   # shared_conf: 1
-   ## y2.yml
-   # conf: F.inc('y1.yml')
+    import conff
+    p = conff.Parser()
+    r = p.parse({'math': '1 + 3'})
+    assert r == {'math': 4}
 
-   r = conff.load('y2.yml')
-   r = {'conf': {'shared_conf': 1}}
+Load YAML file
+^^^^^^^^^^^^^^
+
+.. code:: python
+
+    import conff
+    p = conff.Parser()
+    r = p.load('path_of_file.yml')
+
+Template based config
+^^^^^^^^^^^^^^^^^^^^^
+
+Using `jinja2 <http://jinja.pocoo.org/docs/2.10/>`_ to craft more powerful config.
+
+.. code:: python
+
+    import conff
+    p = conff.Parser()
+    r = p.parse('F.template("{{ 1 + 2 }}")')
+    assert r == 3
 
 
 Examples
@@ -98,82 +121,104 @@ Parse with simple expression
 
 .. code:: python
 
-   import conff
-   r = conff.parse('1 + 2')
-   r = 3
+    import conff
+    p = conff.Parser()
+    r = p.parse('1 + 2')
+    assert r == 3
 
 Parse object
 ^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   r = conff.parse({"math": "1 + 2"})
-   r = {'math': 3}
+    import conff
+    p = conff.Parser()
+    r = p.parse({"math": "1 + 2"})
+    assert r == {'math': 3}
 
 Ignore expression (declare it as string)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   r = conff.parse('"1 + 2"')
-   r = '1 + 2'
+    import conff
+    p = conff.Parser()
+    r = conff.parse('"1 + 2"')
+    assert r == '1 + 2'
 
 Parse error behaviours
 ^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   errors = []
-   r = conff.parse({"math": "1 / 0"}, errors=errors)
-   r = {'math': '1 / 0'}
-   errors = [['1 / 0', ZeroDivisionError('division by zero',)]]
+    import conff
+    p = conff.Parser()
+    r = p.parse({'math': '1 / 0'})
+    # Exception raised
+    # ZeroDivisionError: division by zero
+
+
+import files
+^^^^^^^^^^^^
+
+.. code:: python
+
+    import conff
+    ## y1.yml
+    # shared_conf: 1
+    ## y2.yml
+    # conf: F.inc('y1.yml')
+
+    p = conff.Parser()
+    r = p.load('y2.yml')
+    assert r == {'conf': {'shared_conf': 1}}
 
 Parse with functions
 ^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   def fn_add(a, b):
-       return a + b
-   r = conff.parse('F.add(1, 2)', fns={'add': fn_add})
-   r = 3
+    import conff
+    def fn_add(a, b):
+        return a + b
+    p = conff.Parser(fns={'add': fn_add})
+    r = p.parse('F.add(1, 2)')
+    assert r == 3
 
 Parse with names
 ^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   r = conff.parse('a + b', names={'a': 1, 'b': 2})
-   r = 3
+    import conff
+    p = conff.Parser(names={'a': 1, 'b': 2})
+    r = conff.parse('a + b')
+    assert r == 3
 
 Parse with extends
 ^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   data = {
+    import conff
+    data = {
        't1': {'a': 'a'},
        't2': {
            'F.extend': 'R.t1',
            'b': 'b'
        }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
+    }
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'t1': {'a': 'a'}, 't2': {'a': 'a', 'b': 'b'}}
 
 Parse with updates
 ^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   data = {
+    import conff
+    data = {
        't1': {'a': 'a'},
        't2': {
            'b': 'b',
@@ -181,17 +226,18 @@ Parse with updates
                'c': 'c'
            },
        }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
+    }
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'t1': {'a': 'a'}, 't2': {'b': 'b', 'c': 'c'}}
 
 Parse with extends and updates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code:: python
 
-   import conff
-   data = {
+    import conff
+    data = {
        't1': {'a': 'a'},
        't2': {
            'F.extend': 'R.t1',
@@ -201,41 +247,44 @@ Parse with extends and updates
                'c': 'c'
            },
        }
-   }
-   r = conff.parse(data)
-   r = {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
+    }
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'t1': {'a': 'a'}, 't2': {'a': 'A', 'b': 'b', 'c': 'c'}}
 
-Create a list of Values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Create a list of values
+^^^^^^^^^^^^^^^^^^^^^^^
 
 This creates a list of floats, similar to numpy.linspace
 
 .. code:: python
 
-   import conff
-   data = {'t2': 'F.linspace(0, 10, 5)'}
-   r = conff.parse(data)
-   r = {'t2': [0.0, 2.5, 5.0, 7.5, 10.0]} 
+    import conff
+    data = {'t2': 'F.linspace(0, 10, 5)'}
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'t2': [0.0, 2.5, 5.0, 7.5, 10.0]}
 
 This also creates a list of floats, but behaves like numpy.arange (although
 slightly different in that it is inclusive of the endpoint).
 
 .. code:: python
 
-   import conff
-   data = {'t2': 'F.arange(0, 10, 2)'}
-   r = conff.parse(data)
-   r = {'t2': [0, 2, 4, 6, 8, 10]}
+    import conff
+    data = {'t2': 'F.arange(0, 10, 2)'}
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'t2': [0, 2, 4, 6, 8, 10]}
 
 Parse with for each
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 One can mimic the logic of a for loop with the following example
 
 .. code:: python
 
-   import conff
-   data = {'t1': 2,
+    import conff
+    data = {'t1': 2,
            'F.foreach': {
                'values': 'F.linspace(0, 10, 2)',
                # You have access to loop.index, loop.value, and loop.length
@@ -246,8 +295,9 @@ One can mimic the logic of a for loop with the following example
                     }
                }
           }
-   r = conff.parse(data)
-   r = {'length': 3, 't1': 2, 'test0': 0.0, 'test1': 10.0, 'test2': 20.0} 
+    p = conff.Parser()
+    r = p.parse(data)
+    assert r == {'length': 3, 't1': 2, 'test0': 0.0, 'test1': 10.0, 'test2': 20.0}
 
 Encryption
 ----------
@@ -478,18 +528,7 @@ TODO
 
 - [ ] Features
 
-  - [X] Add more functions for encryption
-  - [ ] Test on multilanguage
-  - [ ] Add circular dependencies error
-  - [ ] Ensure this is good on production environment
-  - [X] Add options to give more flexibility
-  - [ ] Check safety on the evaluator, expose more of its options such as (MAX_STRING)
-  - [ ] Improve F.extend to allow list to be extended
-  - [ ] Allow conff to update existing config object
-  - [ ] Have more converter from/to excel, xml
-  - [ ] Feature to display warning and error messages (for example, missing parameters, logging purposes)
-  - [ ] Add options to extend structure in template (for example, https://github.com/defunkt/pystache), the idea is render the values in string, convert it to object and attach it back. This will also inherit lots of feature such as loop, decision blocks
-  - [ ] Separate current functions into built-in and restructure it (first break-changes to organise all the built-in functions into more better way)
+  - Wish List Features now moved to `wiki page <https://github.com/kororo/conff/wiki/Wish-List-Features>`_.
 
 - [ ] Improve docs
 
@@ -498,6 +537,8 @@ TODO
   - [X] Put more examples
   - [ ] Setup readthedocs
   - [ ] Add code conduct, issue template into git project.
+  - [ ] Add information that conff currently accept YML and it not limited, it can take any objects
+
 
 Other Open Source
 -----------------
@@ -505,6 +546,7 @@ Other Open Source
 This project uses other awesome projects:
 
 - `cryptography <https://github.com/pyca/cryptography>`_
+- `jinja2 <http://jinja.pocoo.org/docs/2.10/>`_
 - `munch <https://github.com/Infinidat/munch>`_
 - `simpleeval <https://github.com/danthedeckie/simpleeval>`_
 - `yaml <https://github.com/yaml/pyyaml>`_
