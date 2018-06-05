@@ -1,5 +1,13 @@
 # Change Logs
 
+## 0.5.0
+- Add Parser class
+- Implement T3: simpleeval options
+- Add options to extend structure in template
+- Integrate with Jinja2, template in JSON/YAML as string or file then covert back to object
+- Add more tests
+- Update readme to latest protocol
+
 ## 0.4.2
 - Add support 3.5
 - Add more examples and tests
