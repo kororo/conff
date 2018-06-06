@@ -45,6 +45,7 @@ class Parser:
 
     def prepare_logger(self):
         logger = logging.getLogger('conff')
+        logger.addHandler(logging.NullHandler())
         return logger
 
     def prepare_params(self, params: dict = None):
@@ -115,8 +116,7 @@ class Parser:
         fs_root = fs_root if fs_root is None else os.path.dirname(fs_file_path)
         self.params.update({'fs_path': fs_path, 'fs_root': fs_root})
         with open(fs_file_path) as stream:
-            if 'yml' in fs_file_ext:
-                # load_yaml initial structure
+            if fs_file_ext in ('.yml', '.yaml'):
                 data = yaml_safe_load(stream)
                 names = {'R': data}
                 self.names.update(names)
@@ -127,6 +127,7 @@ class Parser:
                 self.names.update(names)
                 data = self._process(data)
             else:
+                # load_yaml initial structure
                 data = '\n'.join(stream.readlines())
         # Delete anything specific to this file so we can reuse the parser
         for k in ('fs_path', 'fs_root', 'R'):
@@ -158,19 +159,20 @@ class Parser:
         except SyntaxError as ex:
             v = expr
             # TODO: feature T2
-            # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
+            self.logger.warn("simpleeval SyntaxError exception:\n"
+                             "  Expression: %s  Message: %s",
+                             ex.text, ex.msg)
             self.errors.append([expr, ex])
         except simpleeval.InvalidExpression as ex:
             v = expr
             # TODO: feature T2
-            # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
-            # print("Raised simpleeval exception {} for expression {}".format(type(ex), v))
-            # print("Message: {}".format(ex))
+            self.logger.warn("simpleeval InvalidExpression exception:\n"
+                             "  Expression: %s\n  Message: %s",
+                             ex.expression, ex.message)
             self.errors.append(ex)
         except Exception as ex:
             v = expr
             # TODO: feature T2
-            # print('Exception on expression: {}'.format(expr))
             self.errors.append(ex)
             raise
         # TODO: feature T4: include this part of the classes so user could override
@@ -308,18 +310,24 @@ class Parser:
         etype = self.params.get('etype', None)
         ekey = self.params.get('ekey', None)
         token = None
-        if etype == 'fernet':
+        if etype == 'fernet' and ekey is not None:
             f = Fernet(ekey)
             token = f.encrypt(data=str(data).encode()).decode()
+        else:
+            warnings.warn('ekey is None, cannot encrypt')
+            raise
         return token
 
     def fn_decrypt(self, data):
         etype = self.params.get('etype', None)
         ekey = self.params.get('ekey', None)
         message = None
-        if etype == 'fernet':
+        if etype == 'fernet' and ekey is not None:
             f = Fernet(ekey)
             message = f.decrypt(token=str(data).encode()).decode()
+        else:
+            warnings.warn('ekey is None, cannot decrypt')
+            raise
         return message
 
     def fn_inc(self, fs_path, fs_root: str = None):
