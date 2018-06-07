@@ -1,5 +1,6 @@
 from conff import ee
 from conff import parser
+from conff import utils
 
 
 __all__ = ['parse', 'load', 'encrypt', 'decrypt', 'generate_key', 'update', 'Parser']

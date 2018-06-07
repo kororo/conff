@@ -1,18 +1,85 @@
+import posixpath
 from munch import Munch
 from collections import OrderedDict as odict
+
+def splitall(path):
+    """
+    Get each individual component in a path separated by forward slashes.
+    Relative paths are normalized first.
+
+    :param path: A slash separated path /like/this/../here
+    :type path: str
+
+    :return: A list of all the parts in the path
+    :rtype: list
+    """
+
+    path = posixpath.normpath(path.strip('/'))
+    allparts = []
+    while True:
+        parts = posixpath.split(path)
+        if parts[1] == path: # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
 
 
 class Munch2(Munch):
     """
-    Provide easy way to access item in object by dot-notation.
+    Provide easy way to access item in object by dot-notation or with a slash
+    separatred string representing a path.
     Example:
-        obj = {'item': 'value'}
+        obj = {'outer': {'inner': 'value'}}
         # old way
-        value = obj.get('item')
-        # with munch
-        value = obj.item
+        value = obj.get('outer').get('inner')
+        # with munch2
+        value = obj.outer.inner
+        # or
+        value = obj['outer/inner']
     """
-    pass
+
+    def __getitem__(self, k):
+        """
+        This override allows us to get a nested value in a dict using a forward
+        slash separated string
+        """
+
+        try:
+            parts = splitall(k)
+            ret = super().__getitem__(parts[0])
+            for part in parts[1:]:
+                ret = super(Munch2, ret).__getitem__(part)
+            return ret
+        except KeyError as ex:
+            key = ex.args[0]
+            msg = 'Key {} missing from path {}'.format(key, parts)
+            ex.args = (msg,)
+            raise
+
+    def __setitem__(self, k, v):
+        """
+        This setup allows setting a value inside a nested dictionary using a
+        slash separated string with the usual [] operator.
+        """
+
+        # try:
+        head, tail = posixpath.split(k)
+        if head:
+            ret = self[head]
+        else:
+            ret = self
+        super(Munch2, ret).__setitem__(tail, v)
+
+    def __delitem__(self, key):
+        head, tail = posixpath.split(key)
+        if head:
+            ret = self[head]
+        else:
+            ret = self
+        super(Munch2, ret).__delitem__(tail)
 
 
 def update_recursive(d, u):
