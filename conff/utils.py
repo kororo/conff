@@ -66,12 +66,13 @@ class Munch2(Munch):
         """
 
         # try:
-        head, tail = posixpath.split(k)
-        if head:
-            ret = self[head]
-        else:
-            ret = self
-        super(Munch2, ret).__setitem__(tail, v)
+        parts = splitall(k)
+        ret = self
+        for part in parts[:-1]:
+            if part not in ret:
+                super(Munch2, ret).__setitem__(part, Munch2())
+            ret = self[part]
+        super(Munch2, ret).__setitem__(parts[-1], v)
 
     def __delitem__(self, key):
         head, tail = posixpath.split(key)

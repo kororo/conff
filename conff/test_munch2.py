@@ -2,25 +2,10 @@ import conff
 from conff import utils
 from unittest import TestCase
 
-# test = utils.Munch2.fromDict({'a': {'b1': 1, 'b2': 2}})
-
-# assert(test['a/b1'] == 1)
-# assert(test['/a/b1'] == 1)
-# assert(test['/a/b1/'] == 1)
-# test['a/b3'] = 3
-# test['a/b2'] = 4
-# print(test)
-# print(test['a'])
-# print(test.a.b1)
-# print(test)
-# del test['a/b1']
-# print(test)
-# print(test['a/zsfv'])
-
 class Munch2TestCase(TestCase):
     def setUp(self):
         super(Munch2TestCase, self).setUp()
-        maxDiff = None
+        self.maxDiff = None
 
     def test_path_splitter(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
@@ -60,6 +45,11 @@ class Munch2TestCase(TestCase):
         self.assertListEqual(m['a/b3'], [1, '2'])
         m['a'] = 'done'
         self.assertEqual(m['a'], 'done')
+        # Test setting nested items in an empty Munch
+        empty = utils.Munch2()
+        empty['a/b1'] = 3
+        self.assertDictEqual(empty['a'], {'b1': 3})
+        self.assertEqual(empty['a/b1'], 3)
 
     def test_del(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
