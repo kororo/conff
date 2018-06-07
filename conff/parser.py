@@ -314,8 +314,7 @@ class Parser:
             f = Fernet(ekey)
             token = f.encrypt(data=str(data).encode()).decode()
         else:
-            warnings.warn('ekey is None, cannot encrypt')
-            raise
+            raise ValueError('Encryption key cannot be of type None')
         return token
 
     def fn_decrypt(self, data):
@@ -326,8 +325,7 @@ class Parser:
             f = Fernet(ekey)
             message = f.decrypt(token=str(data).encode()).decode()
         else:
-            warnings.warn('ekey is None, cannot decrypt')
-            raise
+            raise ValueError('Encryption key cannot be of type None')
         return message
 
     def fn_inc(self, fs_path, fs_root: str = None):
