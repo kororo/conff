@@ -133,6 +133,8 @@ class Parser:
         for k in ('fs_path', 'fs_root', 'R'):
             if k in self.params:
                 del self.params[k]
+            if k in self.names:
+                del self.names[k]
         return data
 
     def parse(self, data):
@@ -223,11 +225,14 @@ class Parser:
         will be callable via F.name_of_func(args_go_here)
         """
 
-    def add_names(self, names: dict):
+    def update_names(self, names: dict):
         """
         Add names to the dictionary of names available when parsing. These
-        names are accessible via the syntax R.path.to.name
+        names are accessible via the syntax R.path.to.name. Any overlapping
+        keys between the existing names dict and the argument to this function
+        will be replaced using the values in the argument dict.
         """
+        self.names = update_recursive(self.names, names)
 
     def generate_crypto_key(self):
         """

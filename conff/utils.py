@@ -1,30 +1,22 @@
 import posixpath
 from munch import Munch
 from collections import OrderedDict as odict
-
-def splitall(path):
-    """
-    Get each individual component in a path separated by forward slashes.
-    Relative paths are normalized first.
-
-    :param path: A slash separated path /like/this/../here
-    :type path: str
-
-    :return: A list of all the parts in the path
-    :rtype: list
-    """
-
-    path = posixpath.normpath(path.strip('/'))
-    allparts = []
-    while True:
-        parts = posixpath.split(path)
-        if parts[1] == path: # sentinel for relative paths
-            allparts.insert(0, parts[1])
-            break
-        else:
-            path = parts[0]
-            allparts.insert(0, parts[1])
-    return allparts
+import yaml
+try:
+    from yaml import (
+        CLoader as Loader,
+        CDumper as Dumper,
+        CSafeLoader as SafeLoader,
+        CSafeDumper as SafeDumper,
+    )
+except ImportError:
+    from yaml import (
+        Loader,
+        Dumper,
+        SafeLoader,
+        SafeDumper,
+    )
+_YAML_MAP_TAG = yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
 
 
 class Munch2(Munch):
@@ -65,13 +57,12 @@ class Munch2(Munch):
         slash separated string with the usual [] operator.
         """
 
-        # try:
         parts = splitall(k)
         ret = self
         for part in parts[:-1]:
             if part not in ret:
                 super(Munch2, ret).__setitem__(part, Munch2())
-            ret = self[part]
+            ret = ret[part]
         super(Munch2, ret).__setitem__(parts[-1], v)
 
     def __delitem__(self, key):
@@ -81,6 +72,62 @@ class Munch2(Munch):
         else:
             ret = self
         super(Munch2, ret).__delitem__(tail)
+
+
+def construct_odict(loader, node):
+    loader.flatten_mapping(node)
+    return odict(loader.construct_pairs(node))
+
+
+def represent_odict(dumper, data):
+    return dumper.represent_dict(data.iteritems())
+
+
+class OrderedLoader(SafeLoader):
+    """
+    We subclass the SafeLoader so we don't globally mess up any YAML loaders
+    that the client application might be using elsewhere. The modifications we
+    make invasively convert all mappings to OrderedDicts, which might not be
+    desired in any client applications
+    """
+    pass
+
+
+# I think it is safe to globally add this representer, because worst case
+# scenario OrderedDicts get dumped as a normal dict would without throwing any
+# exceptions
+yaml.add_representer(odict, represent_odict)
+# Means all mapping tags will be loaded and returned as OrderedDicts
+OrderedLoader.add_constructor(_YAML_MAP_TAG, construct_odict)
+
+
+def yaml_safe_load(stream):
+    return yaml.safe_load(stream, Loader=OrderedLoader)
+
+
+def splitall(path):
+    """
+    Get each individual component in a path separated by forward slashes.
+    Relative paths are normalized first.
+
+    :param path: A slash separated path /like/this/../here
+    :type path: str
+
+    :return: A list of all the parts in the path
+    :rtype: list
+    """
+
+    path = posixpath.normpath(path.strip('/'))
+    allparts = []
+    while True:
+        parts = posixpath.split(path)
+        if parts[1] == path: # sentinel for relative paths
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+    return allparts
 
 
 def update_recursive(d, u):
@@ -109,23 +156,6 @@ def update_recursive(d, u):
             setattr(d, k, u2)
     return d
 
-
-def yaml_safe_load(stream):
-    import yaml
-    from yaml.resolver import BaseResolver
-
-    def ordered_load(stream, loader_cls):
-        class OrderedLoader(loader_cls):
-            pass
-
-        def construct_mapping(loader, node):
-            loader.flatten_mapping(node)
-            return odict(loader.construct_pairs(node))
-
-        OrderedLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping)
-        return yaml.load(stream, OrderedLoader)
-
-    return ordered_load(stream, yaml.SafeLoader)
 
 
 def filter_value(value):
