@@ -102,7 +102,7 @@ OrderedLoader.add_constructor(_YAML_MAP_TAG, construct_odict)
 
 
 def yaml_safe_load(stream):
-    return yaml.safe_load(stream, Loader=OrderedLoader)
+    return yaml.load(stream, Loader=OrderedLoader)
 
 
 def splitall(path):
