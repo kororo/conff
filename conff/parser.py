@@ -11,7 +11,7 @@ from jinja2 import Template
 from simpleeval import EvalWithCompoundTypes
 from cryptography.fernet import Fernet
 from conff import utils
-from conff.utils import Munch2, update_recursive, yaml_safe_load, filter_value, odict
+from conff.utils import update_recursive, yaml_safe_load, filter_value, odict
 
 
 class Parser:
@@ -72,7 +72,6 @@ class Parser:
 
     def prepare_names(self, names: dict = None):
         names = names or {}
-        names = names if isinstance(names, Munch2) else Munch2(names)
         return names
 
     def prepare_evaluator(self):
@@ -294,7 +293,7 @@ class Parser:
         type_val2 = type(val2)
         if type_val == list and type_val2 == list:
             val.extend(val2)
-        elif type_val in [dict, odict, Munch2] and type_val2 in [dict, odict, Munch2]:
+        elif type_val in [dict, odict] and type_val2 in [dict, odict]:
             for k, v in val2.items():
                 val[k] = v
         return val
@@ -302,7 +301,7 @@ class Parser:
     def fn_update(self, update, parent):
         def walk(u, p):
             tu, tp = type(u), type(p)
-            if tu in [dict, odict, Munch2] and tp in [dict, odict, Munch2]:
+            if tu in [dict, odict] and tp in [dict, odict]:
                 for k, v in u.items():
                     p[k] = walk(v, p.get(k, v))
                 return p
