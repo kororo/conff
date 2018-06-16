@@ -45,6 +45,172 @@ This project inspired of the necessity complex config in a project. By means com
   - Add custom functions in Python
   - Link name data from Python
 
+
+Real World Examples
+-------------------
+
+All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data>`_.
+Imagine you start an important project, your code need to analyse image/videos which involves workflow
+with set of tasks with AWS Rekognition. The steps will be more/less like this:
+
+    1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
+
+    2. Analyse the images with AWS API, then goes (4)
+
+    3. Analyse the videos with AWS API, then goes (4)
+
+    4. Write the result back to JSON file, finished
+
+The configuration required:
+
+    1. Read images/videos (where is the folder)
+
+    2. Analyse images (AWS API credential and max resolution for image)
+
+    3. Analyse videos (AWS API credential and max resolution for video)
+
+    4. Write results (where is the result should be written)
+
+1. Without conff library
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml>`_
+
+Where it is all started, if we require to store the configuration as per normally, it should be like this.
+
+.. code:: yaml
+
+    job:
+      read_image:
+        # R01
+        root_path: /data/project/images_and_videos/
+      analyse_image:
+        # R02
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          # R03
+          aws_secret_access_key: ACCESSSECRETPLAIN1234
+        max_res: [1024, 768]
+      analyse_video:
+        # R04
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          aws_secret_access_key: ACCESSSECRETPLAIN1234
+        max_res: [800, 600]
+      write_result:
+        # R05
+        output_path: /data/project/result.json
+
+.. code:: python
+
+    import yaml
+    with open('data/sample_config_01.yml') as stream:
+        r1 = yaml.safe_load(stream)
+
+Notes:
+
+    - R01: The subpath of "/data/project" is repeated between R01 and R05
+    - R02: api_cred is repeatedly defined with R04
+    - R03: the secret is plain visible, if this stored in GIT, it is pure disaster
+
+2. Fix the repeat
+^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml>`_
+
+Repeating values/configuration is bad, this could potentially cause human mistake if changes made is not
+consistently applied in all occurences.
+
+.. code:: yaml
+
+    # this can be any name, as long as not reserved in Python
+    shared:
+      project_path: /data/project
+      aws_cred:
+        region_name: ap-southeast-2
+        aws_access_key_id: ACCESSKEY1234
+        # F03
+        aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+
+    job:
+      read_image:
+        # F01
+        root_path: R.shared.project_path + '/images_and_videos/'
+      analyse_image:
+        # F02
+        api_cred: R.shared.aws_cred
+        max_res: [1024, 768]
+      analyse_video:
+        # F04
+        api_cred: R.shared.aws_cred
+        max_res: [800, 600]
+      write_result:
+        # F05
+        output_path: R.shared.project_path + '/result.json'
+
+.. code:: python
+
+    import conff
+    # ekey is the secured encryption key
+    # WARNING: this is just demonstration purposes
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    r2 = conff.load(fs_path='data/sample_config_02.yml', params={'ekey': ekey})
+
+Notes:
+
+    - F01: it is safe if the prefix '/data/project' need to be changed, it will automatically changed for F05
+    - F02: no more duplicated config with F04
+    - F03: it is secured to save this to GIT, as long as the encryption key is stored securely somewhere in server such
+      as ~/.secret
+
+3. Optimise to the extreme
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+File: `data/sample_config_03.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_03.yml>`_
+
+This is just demonstration purposes to see the full capabilities of this library.
+
+.. code:: yaml
+
+    # this can be any name, as long as not reserved in Python
+    shared:
+      project_path: /data/project
+      analyse_image_video:
+        api_cred:
+          region_name: ap-southeast-2
+          aws_access_key_id: ACCESSKEY1234
+          aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
+        max_res: [1024, 768]
+    job:
+      read_image:
+        root_path: R.shared.project_path + '/images_and_videos/'
+      analyse_image: R.shared.analyse_image_video
+      analyse_video:
+        F.extend: R.shared.analyse_image_video
+        F.update:
+          max_res: [800, 600]
+      write_result:
+        output_path: R.shared.project_path + '/result.json'
+
+For completeness, ensuring data is consistent and correct between sample_config_01.yml, sample_config_02.yml
+and sample_config_03.yml.
+
+.. code:: python
+
+    # nose2 conff.test.ConffTestCase.test_sample
+    fs_path = 'data/sample_config_01.yml'
+    with open(fs_path) as stream:
+        r1 = yaml.safe_load(stream)
+    fs_path = 'data/sample_config_02.yml'
+    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
+    r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+    fs_path = 'data/sample_config_03.yml'
+    r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+    self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
+    self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
+
 Feedback and Discussion
 -----------------------
 
@@ -326,171 +492,6 @@ This section to help you to quickly generate encryption key, initial encrypt val
     names = {'R': {'_': {'etype': 'fernet', 'ekey': ekey}}}
     encrypted_value = 'gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w='
     conff.decrypt(names)(encrypted_value)
-
-Real World Examples
--------------------
-
-All the example below located in `data directory <https://github.com/kororo/conff/tree/master/conff/data>`_.
-Imagine you start an important project, your code need to analyse image/videos which involves workflow
-with set of tasks with AWS Rekognition. The steps will be more/less like this:
-
-    1. Read images/videos from a specific folder, if images goes to (2), if videos goes to (3).
-
-    2. Analyse the images with AWS API, then goes (4)
-
-    3. Analyse the videos with AWS API, then goes (4)
-
-    4. Write the result back to JSON file, finished
-
-The configuration required:
-
-    1. Read images/videos (where is the folder)
-
-    2. Analyse images (AWS API credential and max resolution for image)
-
-    3. Analyse videos (AWS API credential and max resolution for video)
-
-    4. Write results (where is the result should be written)
-
-1. Without conff library
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-File: `data/sample_config_01.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_01.yml>`_
-
-Where it is all started, if we require to store the configuration as per normally, it should be like this.
-
-.. code:: yaml
-
-    job:
-      read_image:
-        # R01
-        root_path: /data/project/images_and_videos/
-      analyse_image:
-        # R02
-        api_cred:
-          region_name: ap-southeast-2
-          aws_access_key_id: ACCESSKEY1234
-          # R03
-          aws_secret_access_key: ACCESSSECRETPLAIN1234
-        max_res: [1024, 768]
-      analyse_video:
-        # R04
-        api_cred:
-          region_name: ap-southeast-2
-          aws_access_key_id: ACCESSKEY1234
-          aws_secret_access_key: ACCESSSECRETPLAIN1234
-        max_res: [800, 600]
-      write_result:
-        # R05
-        output_path: /data/project/result.json
-
-.. code:: python
-
-    import yaml
-    with open('data/sample_config_01.yml') as stream:
-        r1 = yaml.safe_load(stream)
-
-Notes:
-
-    - R01: The subpath of "/data/project" is repeated between R01 and R05
-    - R02: api_cred is repeatedly defined with R04
-    - R03: the secret is plain visible, if this stored in GIT, it is pure disaster
-
-2. Fix the repeat
-^^^^^^^^^^^^^^^^^
-
-File: `data/sample_config_02.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_02.yml>`_
-
-Repeating values/configuration is bad, this could potentially cause human mistake if changes made is not
-consistently applied in all occurences.
-
-.. code:: yaml
-
-    # this can be any name, as long as not reserved in Python
-    shared:
-      project_path: /data/project
-      aws_cred:
-        region_name: ap-southeast-2
-        aws_access_key_id: ACCESSKEY1234
-        # F03
-        aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
-
-    job:
-      read_image:
-        # F01
-        root_path: R.shared.project_path + '/images_and_videos/'
-      analyse_image:
-        # F02
-        api_cred: R.shared.aws_cred
-        max_res: [1024, 768]
-      analyse_video:
-        # F04
-        api_cred: R.shared.aws_cred
-        max_res: [800, 600]
-      write_result:
-        # F05
-        output_path: R.shared.project_path + '/result.json'
-
-.. code:: python
-
-    import conff
-    # ekey is the secured encryption key
-    # WARNING: this is just demonstration purposes
-    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    r2 = conff.load(fs_path='data/sample_config_02.yml', params={'ekey': ekey})
-
-Notes:
-
-    - F01: it is safe if the prefix '/data/project' need to be changed, it will automatically changed for F05
-    - F02: no more duplicated config with F04
-    - F03: it is secured to save this to GIT, as long as the encryption key is stored securely somewhere in server such
-      as ~/.secret
-
-3. Optimise to the extreme
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-File: `data/sample_config_03.yml <https://github.com/kororo/conff/tree/master/conff/data/sample_config_03.yml>`_
-
-This is just demonstration purposes to see the full capabilities of this library.
-
-.. code:: yaml
-
-    # this can be any name, as long as not reserved in Python
-    shared:
-      project_path: /data/project
-      analyse_image_video:
-        api_cred:
-          region_name: ap-southeast-2
-          aws_access_key_id: ACCESSKEY1234
-          aws_secret_access_key: F.decrypt('gAAAAABbBBhOJDMoQSbF9jfNgt97FwyflQEZRxv2L2buv6YD_Jiq8XNrxv8VqFis__J7YlpZQA07nDvzYwMU562Mlm978uP9BQf6M9Priy3btidL6Pm406w=')
-        max_res: [1024, 768]
-    job:
-      read_image:
-        root_path: R.shared.project_path + '/images_and_videos/'
-      analyse_image: R.shared.analyse_image_video
-      analyse_video:
-        F.extend: R.shared.analyse_image_video
-        F.update:
-          max_res: [800, 600]
-      write_result:
-        output_path: R.shared.project_path + '/result.json'
-
-For completeness, ensuring data is consistent and correct between sample_config_01.yml, sample_config_02.yml
-and sample_config_03.yml.
-
-.. code:: python
-
-    # nose2 conff.test.ConffTestCase.test_sample
-    fs_path = 'data/sample_config_01.yml'
-    with open(fs_path) as stream:
-        r1 = yaml.safe_load(stream)
-    fs_path = 'data/sample_config_02.yml'
-    ekey = 'FOb7DBRftamqsyRFIaP01q57ZLZZV6MVB2xg1Cg_E7g='
-    r2 = conff.load(fs_path=fs_path, params={'ekey': ekey})
-    fs_path = 'data/sample_config_03.yml'
-    r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
-    self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
-    self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
 Test
 ----
