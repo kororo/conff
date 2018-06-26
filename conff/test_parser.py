@@ -6,6 +6,7 @@ from unittest import TestCase
 import yaml
 import conff
 from conff import utils
+import pprint
 
 
 class ConffTestCase(TestCase):
@@ -108,7 +109,7 @@ class ConffTestCase(TestCase):
     def test_error_load_yaml(self):
         p = conff.Parser()
         fs_path = self.get_test_data_path('test_config_03.yml')
-        with self.assertRaises(TypeError) as context:
+        with self.assertRaises(yaml.constructor.ConstructorError) as context:
             data = p.load(fs_path=fs_path)
 
     def test_error_foreach(self):
@@ -182,6 +183,9 @@ class ConffTestCase(TestCase):
         r2 = conff.load(fs_path=fs_path, params={'ekey': ekey}, errors=errors)
         fs_path = self.get_test_data_path('sample_config_03.yml')
         r3 = conff.load(fs_path=fs_path, params={'ekey': ekey})
+        print('#'*25)
+        pprint.pprint("r2['job'] = {}".format(r2['job']))
+        pprint.pprint("r3['job'] = {}".format(r3['job']))
         self.assertDictEqual(r1['job'], r2['job'], 'Mismatch value')
         self.assertDictEqual(r2['job'], r3['job'], 'Mismatch value')
 
@@ -200,6 +204,7 @@ class ConffTestCase(TestCase):
         p = conff.Parser()
         with self.assertWarns(Warning):
             data = p.parse({'a': 'a', 'b': '1 + 2'})
+            print('data: ', data)
             self.assertDictEqual(data, {'a': 'a', 'b': 3})
 
     def test_update_recursive(self):
@@ -232,9 +237,9 @@ class ConffTestCase(TestCase):
         # test: simple value
         self.assertEqual(data.get('test_1'), 1)
         # test: template as string, it is seamless names from input (test) and template (test_1)
-        self.assertEqual(data.get('test_2'), '2')
+        self.assertEqual(data.get('test_2'), 2)
         # test: template as file (borrowing F.inc capabilities), if test_tpl_01.tpl is {{1 + 2}}
-        self.assertEqual(data.get('test_3'), '3')
+        self.assertEqual(data.get('test_3'), 3)
         # test: this where attaching more complex object
         data_test_4 = {
             "test_4_0": [3, 4], "test_4_1": 1, "test_4_2": 2, "test_4_3": 3, "test_4_4": 4, "test_4_5": 5,

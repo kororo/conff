@@ -2,14 +2,14 @@ import conff
 from conff import utils
 from unittest import TestCase
 
-class Munch2TestCase(TestCase):
+class FancyDictTestCase(TestCase):
     def setUp(self):
-        super(Munch2TestCase, self).setUp()
+        super(FancyDictTestCase, self).setUp()
         self.maxDiff = None
 
     def test_path_splitter(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
-        m = utils.Munch2.fromDict(d)
+        m = utils.FancyDict(d)
         self.assertListEqual(utils.splitall('a/b/c'), ['a', 'b', 'c'])
         self.assertListEqual(utils.splitall('/a/b/c'), ['a', 'b', 'c'])
         self.assertListEqual(utils.splitall('a/b/c/'), ['a', 'b', 'c'])
@@ -20,13 +20,9 @@ class Munch2TestCase(TestCase):
 
     def test_get(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
-        m = utils.Munch2.fromDict(d)
-        self.assertEqual(m.a.b1, 1)
+        m = utils.FancyDict(d)
         self.assertEqual(m['a/b1'], 1)
-        self.assertEqual(m.a.b3.c1, 1)
         self.assertEqual(m['a/b3/c1'], 1)
-        self.assertDictEqual(m.a, {'b1': 1, 'b2': 2, 'b3': {'c1': 1}})
-        self.assertDictEqual(m.a.b3, {'c1': 1})
         self.assertDictEqual(m['a'], {'b1': 1, 'b2': 2, 'b3': {'c1': 1}})
         self.assertDictEqual(m['a/b3'], {'c1': 1})
         with self.assertRaises(KeyError) as context:
@@ -35,9 +31,8 @@ class Munch2TestCase(TestCase):
 
     def test_set(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
-        m = utils.Munch2.fromDict(d)
+        m = utils.FancyDict(d)
         m['a/b2'] = 4
-        self.assertEqual(m.a.b2, 4)
         self.assertEqual(m['a/b2'], 4)
         m['a/b3'] = {'c1': 2, 'c2': 3}
         self.assertDictEqual(m['a/b3'], {'c1': 2, 'c2': 3})
@@ -46,18 +41,18 @@ class Munch2TestCase(TestCase):
         m['a'] = 'done'
         self.assertEqual(m['a'], 'done')
         # Test setting nested items in an empty Munch
-        empty = utils.Munch2()
+        empty = utils.FancyDict()
         empty['a/b1'] = 3
         self.assertDictEqual(empty['a'], {'b1': 3})
         self.assertEqual(empty['a/b1'], 3)
 
     def test_del(self):
         d = {'a': {'b1': 1, 'b2': 2, 'b3': {'c1': 1}}}
-        m = utils.Munch2.fromDict(d)
+        m = utils.FancyDict(d)
         del m['a/b2']
-        self.assertDictEqual(m, {'a': {'b1': 1, 'b3': {'c1': 1}}})
+        self.assertDictEqual(m._d, {'a': {'b1': 1, 'b3': {'c1': 1}}})
         del m['a/b3']
-        self.assertDictEqual(m, {'a': {'b1': 1}})
+        self.assertDictEqual(m._d, {'a': {'b1': 1}})
         del m['a']
-        self.assertDictEqual(m, {})
+        self.assertDictEqual(m._d, {})
 

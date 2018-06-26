@@ -6,7 +6,8 @@ from collections import Mapping, Sequence, Set, ItemsView
 #     print('enter key: {}'.format(k))
 #     print('enter value: {}'.format(v))
 #     return v, v 
-def enter(path, key, value):
+def enter(path, key, value, **kwargs):
+    print(**kwargs)
     if isinstance(value, dict):
         return value, ItemsView(value)
     else:
@@ -14,6 +15,7 @@ def enter(path, key, value):
 
 
 def visit(p, k, v):
+    print(**kwargs)
     print('visit path: {}'.format(p))
     print('visit key: {}'.format(k))
     print('visit value: {}'.format(v))
@@ -21,7 +23,7 @@ def visit(p, k, v):
 
 orig = {'a1': {'b1': 1, 'b2': 2}}
 
-new = remap(orig, visit=visit, enter=enter)
+new = remap(orig, visit=visit, enter=enter, test='test')
 print('ORIG ID: {}'.format(id(orig)))
 print('NEW: {}'.format(new))
 print('NEW ID: {}'.format(id(new)))

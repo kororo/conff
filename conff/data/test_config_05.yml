@@ -17,7 +17,7 @@ test_4:
     {% endfor %}
     # data type is very important here
     test_4_5: {{ R.test_2 | int + R.test_3 | int }}
-    {% if R.test_1 == 1 %}
+    {% if R.test_1  == 1 %}
     test_4_6: 6
     {% else %}
     test_4_6: 'error'
