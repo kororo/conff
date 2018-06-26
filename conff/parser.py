@@ -40,7 +40,6 @@ class Visitor:
         self.d = d
 
     def _get_refs_in_str(self, s):
-        # print("s = {}".format(s))
         refs = re.findall(self.ref_regex, s)
         return refs
 
@@ -51,7 +50,6 @@ class Visitor:
         elif isinstance(val, list):
             for el in val:
                 if isinstance(el, str):
-                    # print('el = {}'.format(el))
                     refs.extend(self._get_refs_in_str(el))
         return refs
 
@@ -61,7 +59,6 @@ class Visitor:
         to the graph as directed edges from nodepath to reference in val to
         indicate them as dependencies of nodepath
         """
-        # print("refs after = {}".format(refs))
         for ref in refs:
             # Don't split up function keys like 'F.extend'
             ref = ref.strip('R')
@@ -74,7 +71,6 @@ class Visitor:
         """
         Add dependency on all refs in refs to all nodes below nodepath
         """
-        # print("refs after = {}".format(refs))
         root = self.d[nodepath]
         for k, v in root.items():
             childpath = posixpath.join(nodepath, k)
@@ -84,22 +80,14 @@ class Visitor:
                 self._add_deps(childpath, refs)
 
     def __call__(self, path, key, val):
-        print('*** Visitor call ***')
-        print('path: {}'.format(path))
-        print('key: {}'.format(key))
-        print('val: {}'.format(val))
         if not path:
             parentpath = '/'
         else:
             parentpath = posixpath.join(*path)
         nodepath = posixpath.join(*path, key)
-        print('Visitor nodepath: {}'.format(nodepath))
         # Get a list of all the references in val
         refs = self._get_refs(val)
         if key == '_depends':
-            print("*** FOUND _depends KEY ****")
-            print("PARENTPATH: {}".format(parentpath))
-            print("PARENTPATH: {}".format(nodepath))
             self._add_deps_recursive(parentpath, refs)
             return False
         else:
@@ -109,7 +97,6 @@ class Visitor:
             return True
 
     def enter(self, path, key, value):
-        # print('enter(%r, %r, %r)' % (path, key, value))
         if isinstance(value, Sequence):
             return value.__class__(), False
         elif isinstance(value, MutableMapping):
@@ -263,7 +250,6 @@ class Parser:
         Parse an expression in string
         """
         try:
-            # print('EXPR: {}'.format(expr))
             v = self._evaluator.eval(expr=expr)
         except SyntaxError as ex:
             v = expr
@@ -311,17 +297,8 @@ class Parser:
         """
         import pprint
         root, g = self.build_graph(root)
-        # print(self.names)
-        # print(root)
-        print(id(self.names['R']))
-        print(id(root))
         sorted_nodes = list(reversed(list(nx.topological_sort(g))))
-        print('#'*25)
-        print('Graph built!')
-        print('Sorted node: {}'.format(sorted_nodes))
-        print('#'*25)
         for nodepath in sorted_nodes:
-            print('Root before: {}'.format(root))
             if nodepath == '/':
                 continue
             path = tuple(nodepath.split('/'))
@@ -334,81 +311,37 @@ class Parser:
                 except KeyError:
                     pass
                 continue
-            print('Parsing node at {}'.format(path))
-            print('nodepath: {}'.format(nodepath))
-            print('parentpath: {}'.format(parentpath))
-            print('key: {}'.format(key))
             # We might have removed this item after running some function
             try:
                 item = root[path]
             except KeyError:
-                print('Missing key: ', path)
                 continue
             parent = root[parentpath]
-            # print("item = {}".format(item))
             if 'F.extend' == key:
-                # print('*'*25)
-                # print('EXTENDING')
-                # print('nodepath: {}'.format(nodepath))
-                # print('parentpath: {}'.format(parentpath))
-                # print("item = {}".format(item))
-                # print("parent = {}".format(parent))
                 if isinstance(item, str):
                     item = self.parse_expr(item)
-                # print("item after parse= {}".format(item))
                 root[parentpath] = self.fn_extend(item, root[parentpath])
                 if isinstance(parent, MutableMapping):
                     del root[parentpath]['F.extend']
-                # print("parent after = {}".format(parent))
-                # print("root[parentpath] after = {}".format(root[parentpath]))
-                # print('*'*25)
             elif 'F.template' == key:
-                # print('*'*25)
-                # print('TEMPLATE')
-                # print('nodepath: {}'.format(nodepath))
-                # print('parentpath: {}'.format(parentpath))
-                # print("item = {}".format(item))
-                # print("parent = {}".format(parent))
                 item = self.fn_template(item)
-                # print("item after = {}".format(item))
                 if isinstance(item, MutableMapping):
                     self.fn_update(item, root[parentpath])
                 else:
                     root[parentpath] = item
                 if isinstance(parent, MutableMapping):
                     del parent['F.template']
-                # print("parent after = {}".format(parent))
-                # print("root[parentpath] after = {}".format(root[parentpath]))
-                # print('*'*25)
             elif 'F.update' == key:
-                # print('-'*25)
-                # print('UPDATE')
-                # print('nodepath: {}'.format(nodepath))
-                # print('parentpath: {}'.format(parentpath))
-                # print("item = {}".format(item))
-                # print("parent = {}".format(parent))
                 self.fn_update(item, parent)
                 del root[parentpath]['F.update']
-                # print("parent after = {}".format(parent))
-                # print('-'*25)
             elif 'F.foreach' == key:
-                print('-'*25)
-                print('FOREACH')
-                print('nodepath: {}'.format(nodepath))
-                print('parentpath: {}'.format(parentpath))
-                print("item = {}".format(item))
-                print("parent = {}".format(parent))
                 for k in ('values', 'template'):
                     if k not in parent['F.foreach']:
                         raise ValueError('F.foreach missing key: {}'.format(k))
 
                 self.fn_foreach(item, root[parentpath])
                 del parent['F.foreach']
-                print("parent after = {}".format(parent))
-                print("root[parentpath] after = {}".format(root[parentpath]))
-                print('-'*25)
             elif isinstance(item, list):
-                # print('Processing list')
                 for i, v in enumerate(item):
                     if isinstance(v, str):
                         item[i] = self.parse_expr(v)
@@ -420,13 +353,10 @@ class Parser:
                     nested_d = get_path(root, path[:-1])
                     nested_d[path[-1]] = value
                 else:
-                    print('EMPTY PATH')
-                    print(path)
-                    print(item)
+                    raise ValueError('This path does not make sense: '
+                                     '{}'.format(path))
         # Remove all _depends keys
         root = remap(root, visit=lambda p, k, v: k != '_depends')
-        print('Root after: {}'.format(root))
-        print('Root type after: {}'.format(type(root)))
         return dict(root)
 
     def add_functions(self, funcs: dict):
@@ -557,7 +487,6 @@ class Parser:
         for i, v in enumerate(foreach['values']):
             self.names.update({'loop': {'index': i, 'value': v,
                                         'length': len(foreach['values'])}})
-            print('NAMES IN LOOP: ', self.names)
             result = {}
             for key, val in template.items():
                 pkey = self.parse_expr(key)
@@ -569,16 +498,11 @@ class Parser:
         del self.names['loop']
 
     def fn_template(self, template: str, root=None):
-        print('INSIDE FN_TEMPLATE')
-        print('ORIG TEMPLATE: ', template)
         template = self.parse_expr(template)
-        print("PARSED TEMPLATE: {}".format(template))
         engine = Template(template)
         obj_str = engine.render(**self.names)
-        print("OBJ_STR: ", obj_str)
         # TODO: feature T2
         obj = utils.yaml_safe_load(obj_str)
-        print("FN_TEMPLATE RETURN: ", obj)
         return obj
 
 

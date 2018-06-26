@@ -15,6 +15,7 @@ from conff.simpleeval import (
     SimpleEval, EvalWithCompoundTypes, FeatureNotAvailable, FunctionNotDefined, NameNotDefined,
     InvalidExpression, AttributeDoesNotExist, simple_eval
 )
+import os
 
 
 class DRYTest(unittest.TestCase):
@@ -189,6 +190,9 @@ class TestFunctions(DRYTest):
         # now it works:
 
         self.t("int(read('file.txt'))", 42)
+
+        # cleanup
+        os.remove('file.txt')
 
     def test_randoms(self):
         """ test the rand() and randint() functions """
