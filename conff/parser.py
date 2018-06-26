@@ -6,10 +6,6 @@ import copy
 import warnings
 import posixpath
 import networkx as nx
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-from networkx.drawing.nx_agraph import graphviz_layout, to_agraph
-import pygraphviz as pgv
 import re
 from jinja2 import Template
 import conff.simpleeval as simpleeval
@@ -21,10 +17,14 @@ from conff.utils import (
     update_recursive,
     yaml_safe_load,
     filter_value,
-    odict,
     FancyDict,
 )
 from collections import MutableMapping, ItemsView, Sequence
+# For visual inspection of the graph during debugging
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
+# from networkx.drawing.nx_agraph import graphviz_layout, to_agraph
+# import pygraphviz as pgv
 
 
 class Visitor:
