@@ -14,6 +14,7 @@ job:
   analyse_video:
     F.extend: R.shared.analyse_image_video
     F.update:
+      _depends: R.job.analyse_video.F.extend
       max_res: [800, 600]
   write_result:
     output_path: R.shared.project_path + '/result.json'

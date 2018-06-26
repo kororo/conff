@@ -37,12 +37,17 @@ class ConffTestCase(TestCase):
         p = conff.Parser()
         data = p.load(fs_path=fs_path)
         data = data if data else {}
-        self.assertDictEqual(data, {
+        print('DATA:')
+        pprint.pprint(data)
+        expected = {
             "test_13": {"test_13_1": 1, "test_13_2": 2, "test_13_3": 3, "test_13_5": {"test_13_5_1": 1},
                         "test_13_6": {"test_13_6_1": 1}},
             "test_14": {"test_13_1": 11, "test_13_2": 2, "test_13_3": 3, "test_13_5": 5,
                         "test_13_6": {"test_13_6_1": 1, "test_13_6_2": {"test_13_6_2_1": 1, "test_13_6_2_2": 2}},
-                        "test_13_4": 4}})
+                        "test_13_4": 4}}
+        print('EXPECTED:')
+        pprint.pprint(expected)
+        self.assertDictEqual(data, expected)
 
     def test_load_json(self):
         fs_path = self.get_test_data_path('test_config_01.json')
@@ -70,6 +75,9 @@ class ConffTestCase(TestCase):
         self.assertListEqual(data.get('test_7', {}).get('test_7_2'), [1, 2])
         self.assertDictEqual(data.get('test_7', {}).get('test_7_3'), {'data2_1': 1, 'data2_2': 2, 'data2_3': 3})
         # test complex extends
+        print('DATA: {}'.format(data.get('test_8')))
+        print('EXPECTED: {}'.format({'data2_1': 1, 'data2_2': '2a', 'data2_3':
+                                     3, 'data2_4': 4}))
         self.assertDictEqual(data.get('test_8'), {'data2_1': 1, 'data2_2': '2a', 'data2_3': 3, 'data2_4': 4})
         # test complex expressions
         self.assertListEqual(data.get('test_9', {}).get('test_9_1'), [True, False, True, False])
@@ -91,18 +99,16 @@ class ConffTestCase(TestCase):
                         'test_13_6': {'test_13_6_1': 1, 'test_13_6_2': {'test_13_6_2_1': 1, 'test_13_6_2_2': 2}},
                         'test_13_4': 4}
         self.assertDictEqual(data.get('test_14'), data_test_14)
-        # test foreach with linspace
-        data_test_15 = {'test0': {'value': 0, 'length': 3},
-                        'test1': {'value': 3, 'length': 3},
-                        'test2': {'value': 6, 'length': 3}}
-        self.assertDictEqual(data.get('test_15'), data_test_15)
+        # # test foreach with linspace
+        data_test_15 = [0, 3, 6]
+        self.assertEqual(data.get('test_15'), data_test_15)
         # test foreach with arange. Should get same result as above
         data_test_16 = data_test_15
-        self.assertDictEqual(data.get('test_16'), data_test_16)
-        # test foreach with arange. Testing behavior of arange
-        data_test_17 = {'test0': {'value': 0, 'length': 2},
-                        'test1': {'value': 4, 'length': 2}}
-        self.assertDictEqual(data.get('test_17'), data_test_17)
+        self.assertEqual(data.get('test_16'), data_test_16)
+        # # test foreach with arange. Testing behavior of arange
+        # data_test_17 = {'test0': {'value': 0, 'length': 2},
+        #                 'test1': {'value': 4, 'length': 2}}
+        # self.assertDictEqual(data.get('test_17'), data_test_17)
         data_test_18 = {'test_18_1': 3}
         self.assertDictEqual(data.get('test_18'), data_test_18)
 
