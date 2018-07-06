@@ -21,10 +21,10 @@ from conff.utils import (
 )
 from collections import MutableMapping, ItemsView, Sequence
 # For visual inspection of the graph during debugging
-# import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
-# from networkx.drawing.nx_agraph import graphviz_layout, to_agraph
-# import pygraphviz as pgv
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from networkx.drawing.nx_agraph import graphviz_layout, to_agraph, write_dot
+import pygraphviz as pgv
 
 
 class Visitor:
@@ -121,7 +121,7 @@ class Parser:
         }
     }
 
-    def __init__(self, names=None, fns=None, params=None):
+    def __init__(self, names=None, fns=None, params=None, cache_graph=False):
         """
         :param params: A dictionary containing some parameters that will modify
         how the builtin functions run. For example, the type of encryption to
@@ -133,7 +133,8 @@ class Parser:
         self.fns = self.prepare_functions(fns=fns)
         self.names = self.prepare_names(names=names)
         self._evaluator = self.prepare_evaluator()
-
+        self.cache_graph = cache_graph
+        self.graph = None
 
     def prepare_logger(self):
         logger = logging.getLogger('conff')
@@ -210,12 +211,12 @@ class Parser:
             if fs_file_ext in ('.yml', '.yaml'):
                 data = FancyDict(yaml_safe_load(stream))
                 names = FancyDict({'R': data})
-                self.names.update(names)
+                self.update_names(names)
                 data = self._process(data)
             elif 'json' in fs_file_ext:
                 data = FancyDict(json.loads(stream.read()))
                 names = FancyDict({'R': data})
-                self.names.update(names)
+                self.update_names(names)
                 data = self._process(data)
             else:
                 # load_yaml initial structure
@@ -235,11 +236,9 @@ class Parser:
         :return: Parsed data
         """
         if isinstance(data, MutableMapping):
-            if type(data) == dict:
-                warnings.warn('argument type is in dict, please use collections.OrderedDict for guaranteed order.')
             data = FancyDict(data)
             new_names = FancyDict({'R': data})
-            self.names.update(new_names)
+            self.update_names(new_names)
             result = self._process(data)
         else:
             result = self.parse_expr(data)
@@ -277,26 +276,44 @@ class Parser:
         return v
 
     def build_graph(self, d):
+        if self.cache_graph and self.graph is not None:
+            return self.graph
         visit = Visitor(d)
         d = remap(d, visit=visit, enter=visit.enter)
         if not nx.is_directed_acyclic_graph(visit.graph):
             raise ValueError('Your config has circular dependencies!')
+        # write_dot(visit.graph, 'graph.dot')
+        # os.system('dot -Tsvg graph.dot -o /tmp/graph.svg')
         # A = to_agraph(visit.graph)
         # A.layout('dot')
-        # A.draw('abcd.png')
-        # img = mpimg.imread('abcd.png')
-        # plt.figure()
+        # A.draw('graph.png')
+        # img = mpimg.imread('graph.png')
+        # plt.figure(figsize=(10, 10))
         # plt.imshow(img)
         # plt.show()
-        # os.remove('abcd.png')
-        return d, visit.graph
+        # os.remove('graph.png')
+        if self.cache_graph:
+            self.graph = visit.graph
+        return visit.graph
+
+    def _process_list(self, l):
+        for i, v in enumerate(l):
+            if isinstance(v, str):
+                res = self.parse_expr(v)
+            elif isinstance(v, list):
+                res = self._process_list(v)
+            elif isinstance(v, (float, int)):
+                res = v
+            else:
+                raise ValueError('Unhandled type: {}'.format(type(v)))
+            l[i] = res
+        return l
 
     def _process(self, root):
         """
         The main parsing function
         """
-        import pprint
-        root, g = self.build_graph(root)
+        g = self.build_graph(root)
         sorted_nodes = list(reversed(list(nx.topological_sort(g))))
         for nodepath in sorted_nodes:
             if nodepath == '/':
@@ -342,9 +359,8 @@ class Parser:
                 self.fn_foreach(item, root[parentpath])
                 del parent['F.foreach']
             elif isinstance(item, list):
-                for i, v in enumerate(item):
-                    if isinstance(v, str):
-                        item[i] = self.parse_expr(v)
+                item = self._process_list(item)
+                root[nodepath] = item
             elif isinstance(item, str):
                 value = self.parse_expr(item)
                 if len(path) == 1:
@@ -374,7 +390,8 @@ class Parser:
         keys between the existing names dict and the argument to this function
         will be replaced using the values in the argument dict.
         """
-        self.names = update_recursive(self.names, names)
+        # self.names = update_recursive(self.names, names)
+        self.names.update(names)
 
     def generate_crypto_key(self):
         """

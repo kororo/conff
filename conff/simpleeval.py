@@ -177,11 +177,16 @@ def safe_power(a, b):  # pylint: disable=invalid-name
 def safe_mult(a, b):  # pylint: disable=invalid-name
     """ limit the number of times an iterable can be repeated... """
 
-    if hasattr(a, '__len__') and b*len(a) > MAX_STRING_LENGTH:
-        raise IterableTooLong('Sorry, I will not evalute something that long.')
-    if hasattr(b, '__len__') and a*len(b) > MAX_STRING_LENGTH:
-        raise IterableTooLong('Sorry, I will not evalute something that long.')
-
+    try:
+        if hasattr(a, '__len__') and b*len(a) > MAX_STRING_LENGTH:
+            raise IterableTooLong('Sorry, I will not evalute something that long.')
+    except TypeError:
+        print('Object {} does not have a valid length'.format(a))
+    try:
+        if hasattr(b, '__len__') and a*len(b) > MAX_STRING_LENGTH:
+            raise IterableTooLong('Sorry, I will not evalute something that long.')
+    except TypeError:
+        print('Object {} does not have a valid length'.format(b))
     return a * b
 
 
@@ -277,7 +282,8 @@ class SimpleEval(object):  # pylint: disable=too-few-public-methods
         self.expr = expr
 
         # and evaluate:
-        return self._eval(ast.parse(expr.strip()).body[0].value)
+        arg = ast.parse(expr.strip()).body[0].value
+        return self._eval(arg)
 
     def _eval(self, node):
         """ The internal evaluator used on each node in the parsed tree. """
